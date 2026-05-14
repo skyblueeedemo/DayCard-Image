@@ -1,0 +1,19 @@
+{
+  "_comment": "复制本文件为 local.json，填入你的 API Key。local.json 已被 .gitignore 忽略，不会提交到仓库。",
+  "providers": {
+    "openai": {
+      "apiKey": "sk-your-openai-api-key-here",
+      "baseURL": "https://api.openai.com/v1",
+      "model": "gpt-image-2"
+    },
+    "stability": {
+      "apiKey": "sk-your-stability-api-key-here"
+    },
+    "zhipu": {
+      "apiKey": "your-zhipu-api-key-here"
+    },
+    "aliyun": {
+      "apiKey": "your-aliyun-api-key-here"
+    }
+  }
+}
