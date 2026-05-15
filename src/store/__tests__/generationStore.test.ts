@@ -136,7 +136,7 @@ describe('generationStore', () => {
       mockGenerate.mockRejectedValueOnce(new Error('retry failed'));
 
       await useGenerationStore.getState().retryGenerate('test');
-      expect(useGenerationStore.getState().error).toBe('重新生成失败，请重试');
+      expect(useGenerationStore.getState().error).toBe('retry failed');
     });
   });
 

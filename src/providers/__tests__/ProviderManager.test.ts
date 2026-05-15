@@ -132,9 +132,13 @@ describe('ProviderManager', () => {
     it('should throw when all providers fail', async () => {
       manager.register(new TestProvider('a', 1, true));
       manager.register(new TestProvider('b', 2, true));
-      const promise = manager.generate('test');
+      // 使用 try/catch 捕获以确保 fake timers 下 rejection 被正确处理
+      let error: Error | null = null;
+      const promise = manager.generate('test').catch((e) => { error = e; });
       await vi.runAllTimersAsync();
-      await expect(promise).rejects.toThrow('所有 Provider 均生成失败');
+      await promise;
+      expect(error).toBeTruthy();
+      expect(error!.message).toContain('所有 Provider 均生成失败');
     });
 
     it('should throw when no providers available', async () => {
