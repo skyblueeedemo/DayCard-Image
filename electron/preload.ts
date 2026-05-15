@@ -17,4 +17,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 配额查询
   getQuota: (providerId: string) => ipcRenderer.invoke('quota:get', providerId),
+
+  // 文件保存
+  saveImage: (params: { imageUrl: string; defaultName?: string }) =>
+    ipcRenderer.invoke('file:save-image', params),
 });

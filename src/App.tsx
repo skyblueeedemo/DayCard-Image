@@ -5,6 +5,8 @@ import PromptInput from '@/components/DailyCard/PromptInput';
 import ProviderSelector from '@/components/ProviderSelector/ProviderSelector';
 import QuotaBar from '@/components/QuotaBar/QuotaBar';
 import ProviderList from '@/components/ProviderManager/ProviderList';
+import HistoryPage from '@/components/History/HistoryPage';
+import DailyTheme from '@/components/DailyCard/DailyTheme';
 
 export default function App() {
   const [activePage, setActivePage] = useState<
@@ -20,17 +22,13 @@ export default function App() {
           <div className="flex flex-col items-center gap-6 py-8">
             <QuotaBar />
             <ProviderSelector />
+            <DailyTheme />
             <PromptInput />
             <ImageGrid />
           </div>
         )}
 
-        {activePage === 'history' && (
-          <div className="flex flex-col items-center justify-center h-full">
-            <h2 className="text-2xl font-bold text-white">历史记录</h2>
-            <p className="text-gray-400 mt-2">浏览已生成的图像</p>
-          </div>
-        )}
+        {activePage === 'history' && <HistoryPage />}
 
         {activePage === 'providers' && (
           <div className="flex flex-col items-center py-8">
@@ -64,7 +62,7 @@ export default function App() {
               <div className="rounded-lg border border-gray-700 bg-gray-800 p-6">
                 <h3 className="text-sm font-medium text-gray-200 mb-3">关于</h3>
                 <div className="text-sm text-gray-400 flex flex-col gap-1">
-                  <p>拾光匣 DayCard-Image v0.1.0</p>
+                  <p>拾光匣 DayCard-Image v0.2.0</p>
                   <p>跨平台 AI 图像生成桌面应用</p>
                   <p className="text-xs text-gray-600 mt-2">
                     Electron + React + TypeScript + TailwindCSS

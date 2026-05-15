@@ -16,6 +16,11 @@ declare global {
         total: number;
         unit: 'count' | 'credit';
       }>;
+
+      saveImage: (params: {
+        imageUrl: string;
+        defaultName?: string;
+      }) => Promise<{ status: string; filePath?: string; message?: string }>;
     };
   }
 }

@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import { imageIpc } from './ipc/imageGeneration';
+import { fileSystemIpc } from './ipc/fileSystem';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -61,6 +62,8 @@ function registerIpcHandlers(): void {
       return { status: 'error', message };
     }
   });
+
+  ipcMain.handle('file:save-image', fileSystemIpc.handleSaveImage);
 }
 
 // ─── App Lifecycle ──────────────────────────────────────

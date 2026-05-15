@@ -39,7 +39,7 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
 
       {/* Footer */}
       <div className="px-5 py-3 border-t border-gray-800 text-xs text-gray-500">
-        拾光匣 v0.1.0
+        拾光匣 v0.2.0
       </div>
     </aside>
   );

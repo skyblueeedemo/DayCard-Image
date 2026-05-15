@@ -1,18 +1,34 @@
+import type { ImageResult } from '@/providers/IImageProvider';
 import { useGenerationStore } from '@/store/generationStore';
 import ImageCard from './ImageCard';
 
-export default function ImageGrid() {
-  const results = useGenerationStore((s) => s.results);
-  const isGenerating = useGenerationStore((s) => s.isGenerating);
+interface ImageGridProps {
+  results?: ImageResult[];
+  loading?: boolean;
+  emptyMessage?: string;
+  emptyHint?: string;
+}
 
-  if (results.length === 0 && !isGenerating) {
+export default function ImageGrid({
+  results: externalResults,
+  loading: externalLoading,
+  emptyMessage = '尚未生成任何图像',
+  emptyHint = '输入 Prompt 开始创作',
+}: ImageGridProps) {
+  const storeResults = useGenerationStore((s) => s.results);
+  const storeLoading = useGenerationStore((s) => s.isGenerating);
+
+  const results = externalResults ?? storeResults;
+  const isLoading = externalLoading ?? storeLoading;
+
+  if (results.length === 0 && !isLoading) {
     return (
       <div className="w-full max-w-4xl">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
             <span className="text-5xl mb-4">🖼</span>
-            <p className="text-sm">尚未生成任何图像</p>
-            <p className="text-xs mt-1 text-gray-600">输入 Prompt 开始创作</p>
+            <p className="text-sm">{emptyMessage}</p>
+            <p className="text-xs mt-1 text-gray-600">{emptyHint}</p>
           </div>
         </div>
       </div>
@@ -22,7 +38,7 @@ export default function ImageGrid() {
   return (
     <div className="w-full max-w-4xl">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {isGenerating && (
+        {isLoading && (
           <div className="aspect-square rounded-lg border border-gray-700 bg-gray-800 animate-pulse flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
               <svg className="animate-spin h-8 w-8 text-blue-400" viewBox="0 0 24 24">

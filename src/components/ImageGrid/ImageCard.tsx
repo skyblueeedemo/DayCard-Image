@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import type { ImageResult } from '@/providers/IImageProvider';
+import { useGenerationStore } from '@/store/generationStore';
 
 interface ImageCardProps {
   result: ImageResult;
@@ -13,14 +15,70 @@ const providerColors: Record<string, string> = {
 };
 
 export default function ImageCard({ result }: ImageCardProps) {
+  const retryGenerate = useGenerationStore((s) => s.retryGenerate);
+  const isGenerating = useGenerationStore((s) => s.isGenerating);
+  const [saving, setSaving] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
   const badgeClass = providerColors[result.provider] ?? 'bg-gray-700 text-gray-200';
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2000);
+  };
 
   const handleCopyUrl = () => {
     navigator.clipboard.writeText(result.url).catch(() => {});
+    showToast('URL 已复制');
+  };
+
+  const handleSave = async () => {
+    // Electron 环境：使用原生保存对话框
+    if (window.electronAPI?.saveImage) {
+      setSaving(true);
+      try {
+        const res = await window.electronAPI.saveImage({
+          imageUrl: result.url,
+          defaultName: `daycard-${result.provider}-${Date.now()}.png`,
+        });
+        if (res.status === 'ok') {
+          showToast('已保存到本地');
+        } else if (res.status !== 'cancelled') {
+          showToast(res.message ?? '保存失败');
+        }
+      } catch {
+        showToast('保存失败');
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      // 非 Electron 环境：降级为复制 URL
+      handleCopyUrl();
+    }
+  };
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    try {
+      await retryGenerate(result.metadata.prompt);
+      showToast('已重新生成');
+    } catch {
+      // error 由 store 处理
+    } finally {
+      setRetrying(false);
+    }
   };
 
   return (
-    <div className="rounded-lg border border-gray-700 bg-gray-800 overflow-hidden hover:border-gray-600 transition-colors">
+    <div className="relative rounded-lg border border-gray-700 bg-gray-800 overflow-hidden hover:border-gray-600 transition-colors">
+      {/* Toast */}
+      {toast && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded bg-gray-900/90 text-xs text-gray-200 shadow-lg">
+          {toast}
+        </div>
+      )}
+
       <div className="aspect-square bg-gray-900">
         <img
           src={result.url}
@@ -50,10 +108,24 @@ export default function ImageCard({ result }: ImageCardProps) {
 
         <div className="flex gap-2">
           <button
-            onClick={handleCopyUrl}
-            className="flex-1 text-xs py-1.5 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+            onClick={handleSave}
+            disabled={saving || isGenerating}
+            className="flex-1 text-xs py-1.5 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 transition-colors"
           >
-            Copy URL
+            {saving ? '保存中...' : window.electronAPI?.saveImage ? '保存' : '复制 URL'}
+          </button>
+          <button
+            onClick={handleRetry}
+            disabled={retrying || isGenerating}
+            className="flex-1 text-xs py-1.5 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-1"
+          >
+            {retrying && (
+              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            )}
+            {retrying ? '...' : '重新生成'}
           </button>
         </div>
       </div>

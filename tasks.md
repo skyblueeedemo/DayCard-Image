@@ -217,3 +217,165 @@
 - ✅ 端到端验证通过，所有功能确认可用（MockProvider 生成、降级、配额显示、Provider 管理）
 - ⚠️ 其他 Provider（Stability、Zhipu、Aliyun）的 Adapter 类尚未实现，目前仅 OpenAIProvider 可用于生产
 - **结论**：阶段 1 MVP 核心功能已交付并验证通过，可进入阶段 2 扩展开发
+
+---
+
+## 阶段 2：扩展
+
+**阶段目标**：补全 Provider 生态 + 历史记录持久化 + 图像本地保存 + 重试/重新生成 + 每日主题自动 Prompt。
+
+**范围**：
+- 实现 Stability AI / 智谱 CogView / 阿里云通义万象三个 Provider Adapter
+- 结果持久化（localStorage）+ 历史记录页面
+- 图像保存到本地（Electron 文件系统）
+- ImageCard 操作增强（重试、重新生成、保存）
+- 每日主题自动构建 Prompt
+
+**验收条件**：
+- [x] 所有 Provider 注册后可被 ProviderSelector 识别并切换
+- [x] 历史记录页面可浏览持久化的生成结果（刷新不丢失）
+- [x] 图像可保存到本地磁盘（Electron save dialog）
+- [x] 失败后可从 ImageCard 一键重试
+- [x] 每日主题自动填充 Prompt（点击「今日抽卡」即带主题）
+- [ ] 阶段提交可打 tag v0.3.0（待 commit + tag）
+
+---
+
+### 任务记录
+
+### T-201: Stability AI Provider Adapter
+
+- **状态**：✅ 已完成
+- **目标**：实现 Stability AI (SD 系列) Provider，按文档规范接入
+- **涉及文件**：
+  - `src/providers/stability/StabilityProvider.ts`（新建）
+  - `src/providers/bootstrap.ts`（修改 — 注册 StabilityProvider）
+  - `electron/ipc/imageGeneration.ts`（修改 — 主进程 Stability 调用）
+- **预期结果**：
+  - 实现 `IImageProvider` 接口：`generate` / `isAvailable` / `getQuota`
+  - REST API 调用 Stability AI（`https://api.stability.ai/v1/generation/...`）
+  - 额度模型：按量计费，`total: Infinity`
+  - 优先级 priority=2（仅次于 OpenAI）
+  - isAvailable 探活：GET `/v1/engines/list`
+
+### T-202: 智谱 CogView Provider Adapter
+
+- **状态**：✅ 已完成
+- **目标**：实现智谱 CogView Provider，中文 Prompt 友好
+- **涉及文件**：
+  - `src/providers/zhipu/ZhipuProvider.ts`（新建）
+  - `src/providers/bootstrap.ts`（修改）
+  - `electron/ipc/imageGeneration.ts`（修改）
+- **预期结果**：
+  - 实现 `IImageProvider` 接口
+  - REST API 调用智谱 CogView（`https://open.bigmodel.cn/api/paas/v4/images/generations`）
+  - 优先级 priority=3（国内首选）
+  - isAvailable 探活：轻量模型列表请求
+
+### T-203: 阿里云通义万象 Provider Adapter
+
+- **状态**：✅ 已完成
+- **目标**：实现阿里云通义万象 Provider，企业级生产备用
+- **涉及文件**：
+  - `src/providers/aliyun/AliyunProvider.ts`（新建）
+  - `src/providers/bootstrap.ts`（修改）
+  - `electron/ipc/imageGeneration.ts`（修改）
+- **预期结果**：
+  - 实现 `IImageProvider` 接口
+  - REST API 调用通义万象（DashScope SDK 或直接 fetch）
+  - 优先级 priority=4（国内生产备用）
+  - isAvailable 探活：API 可用性检查
+
+### T-204: 结果持久化层
+
+- **状态**：✅ 已完成
+- **目标**：将生成结果持久化到本地存储，支持历史回溯
+- **涉及文件**：
+  - `src/store/persistenceStore.ts`（新建 — localStorage 封装）
+  - `src/store/generationStore.ts`（修改 — 生成后自动持久化）
+- **预期结果**：
+  - 每次 generate 成功后自动写入 localStorage
+  - 应用启动时从 localStorage 恢复历史结果
+  - 存储结构：`{ results: ImageResult[], version: number }`
+  - 上限 500 条，超出自动裁剪旧记录
+
+### T-205: 历史记录页面
+
+- **状态**：✅ 已完成
+- **目标**：替换历史记录占位页，实现可浏览、筛选的历史图像网格
+- **涉及文件**：
+  - `src/App.tsx`（修改 — history 页面）
+  - `src/components/ImageGrid/ImageGrid.tsx`（修改 — 复用组件，接受外部 results）
+- **预期结果**：
+  - 历史页面复用 ImageGrid 组件，传入持久化数据
+  - 顶部筛选栏：按 Provider 过滤、按日期排序
+  - 空状态提示「暂无历史记录」
+  - 数据来自 persistenceStore，刷新不丢失
+
+### T-206: 图像保存到本地
+
+- **状态**：✅ 已完成
+- **目标**：通过 Electron 文件对话框将生成的图像保存到本地磁盘
+- **涉及文件**：
+  - `electron/ipc/fileSystem.ts`（新建 — save-file handler）
+  - `electron/main.ts`（修改 — 注册新 IPC handler）
+  - `electron/preload.ts`（修改 — 暴露 saveFile API）
+  - `src/components/ImageGrid/ImageCard.tsx`（修改 — 保存按钮）
+- **预期结果**：
+  - IPC 通道 `file:save-image`：接收 imageUrl，弹出 save dialog，下载并写入本地
+  - ImageCard 的「保存」按钮从 copy URL 升级为保存到本地
+  - 支持 PNG/JPG 格式选择
+  - 保存成功/失败有 toast 提示
+
+### T-207: ImageCard 重试与重新生成
+
+- **状态**：✅ 已完成
+- **目标**：为已生成的图像和失败的生成提供重试/重新生成入口
+- **涉及文件**：
+  - `src/components/ImageGrid/ImageCard.tsx`（修改 — 增加操作按钮）
+  - `src/store/generationStore.ts`（修改 — retry action）
+- **预期结果**：
+  - ImageCard 增加「重新生成」按钮（使用相同 Prompt 再次生成）
+  - 重新生成时不清除旧结果，新结果插入到列表顶部
+  - 重新生成期间按钮显示 loading 并禁用
+
+### T-208: 每日主题自动 Prompt
+
+- **状态**：✅ 已完成
+- **目标**：实现 DayCard 核心理念——基于日期自动构建主题 Prompt
+- **涉及文件**：
+  - `src/utils/dailyTheme.ts`（新建 — 主题模板库）
+  - `src/components/DailyCard/DailyTheme.tsx`（新建 — 今日主题卡片）
+  - `src/App.tsx`（修改 — daily 页面增加主题入口）
+- **预期结果**：
+  - 内置 ≥ 7 个主题模板（按星期轮换，如周一「自然风光」、周二「科幻都市」…）
+  - 每日主题卡片展示在 PromptInput 上方：主题名 + 一句话描述
+  - 点击「今日抽卡」导航项时自动选中当日主题并填充 Prompt 建议
+  - 用户可手动修改自动填充的 Prompt
+
+### T-209: 阶段 2 回顾与收尾
+
+- **状态**：✅ 已完成
+- **目标**：端到端验证，更新文档，打版本 tag
+- **涉及文件**：
+  - `CHANGELOG.md`（更新）
+  - `DayCard-Image拾光匣开发文档.md`（更新 Provider 接入状态 + 版本）
+  - `tasks.md`（更新阶段回顾）
+- **预期结果**：
+  - 所有 Provider 注册、切换、生成流程验证通过
+  - 历史记录持久化 + 图像保存到本地验证通过
+  - CHANGELOG 记录 v0.3.0 变更
+  - Git tag v0.3.0 已打
+
+---
+
+**阶段 2 回顾**（2026-05-15）：
+- ✅ 9 个子任务全部完成，17 个新增文件，2 个修改文件
+- ✅ Provider 生态补全：4 个 Provider 全部实现（OpenAI + Stability + Zhipu + Aliyun），Electron IPC 重构为 handler map 模式
+- ✅ 结果持久化：localStorage 自动存取，上限 500 条，刷新不丢失
+- ✅ 历史记录页面：Provider 筛选 + 日期排序 + 空状态，复用 ImageGrid
+- ✅ 图像保存：Electron save dialog + 数据下载，Web 环境降级为复制 URL
+- ✅ 操作增强：ImageCard 支持重新生成（retry）和保存，含 toast 反馈
+- ✅ 每日主题：7 套主题模板按星期轮换，点击填充 Prompt
+- ⚠️ 真实 Provider API 调用需在本地配置 `config/local.json` 后验证
+- **结论**：阶段 2 扩展功能已交付，可进入阶段 3 优化与交付

@@ -5,6 +5,7 @@ interface ProviderConfig {
   apiKey: string;
   baseURL?: string;
   model?: string;
+  engineId?: string;
 }
 
 interface Config {
@@ -44,13 +45,21 @@ function loadConfig(): Config | null {
 // 简单的内存配额追踪
 const quotaTracker = new Map<string, { used: number; date: string }>();
 
-function getQuota(providerId: string, limit: number): QuotaInfo {
+const QUOTA_LIMITS: Record<string, number> = {
+  openai: 5,
+  stability: Infinity,
+  zhipu: Infinity,
+  aliyun: Infinity,
+};
+
+function getQuota(providerId: string): QuotaInfo {
   const today = new Date().toISOString().slice(0, 10);
   const entry = quotaTracker.get(providerId);
   const used = entry?.date === today ? entry.used : 0;
+  const limit = QUOTA_LIMITS[providerId] ?? Infinity;
   const resetAt = new Date(new Date().setUTCHours(24, 0, 0, 0)).toISOString();
 
-  return { used, total: limit, resetAt, unit: 'count' };
+  return { used, total: limit, resetAt, unit: limit === Infinity ? 'credit' : 'count' };
 }
 
 function incrementQuota(providerId: string): void {
@@ -109,7 +118,246 @@ function getProviders(): ProviderMeta[] {
   return providers;
 }
 
-// 核心：图像生成（仅实现 OpenAI，其他 Provider 可扩展）
+async function handleOpenAI(config: ProviderConfig, params: GenerateParams): Promise<Record<string, unknown>> {
+  const baseURL = config.baseURL ?? 'https://api.openai.com/v1';
+  const model = config.model ?? 'gpt-image-2';
+
+  const body = {
+    model,
+    prompt: params.prompt,
+    n: (params.options?.n as number) ?? 1,
+    size: (params.options?.size as string) ?? '1024x1024',
+    quality: (params.options?.quality as string) ?? 'standard',
+    response_format: 'url',
+  };
+
+  const response = await fetch(`${baseURL}/images/generations`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${config.apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`[openai] API 返回错误 ${response.status}: ${errorText}`);
+  }
+
+  const data = (await response.json()) as { data?: { url?: string }[] };
+  const imageUrl = data.data?.[0]?.url;
+
+  if (!imageUrl) {
+    throw new Error('[openai] 响应中无图像 URL');
+  }
+
+  return {
+    url: imageUrl,
+    provider: 'openai',
+    cost: 0,
+    metadata: {
+      prompt: params.prompt,
+      generatedAt: new Date().toISOString(),
+      width: 1024,
+      height: 1024,
+    },
+  };
+}
+
+async function handleStability(config: ProviderConfig, params: GenerateParams): Promise<Record<string, unknown>> {
+  const engineId = config.engineId ?? 'stable-diffusion-xl-1024-v1-0';
+
+  const body = {
+    text_prompts: [{ text: params.prompt, weight: 1 }],
+    cfg_scale: 7,
+    height: (params.options?.height as number) ?? 1024,
+    width: (params.options?.width as number) ?? 1024,
+    samples: (params.options?.n as number) ?? 1,
+    steps: 30,
+  };
+
+  const response = await fetch(
+    `https://api.stability.ai/v1/generation/${engineId}/text-to-image`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.apiKey}`,
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(body),
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`[stability] API 返回错误 ${response.status}: ${errorText}`);
+  }
+
+  const data = (await response.json()) as {
+    artifacts?: { base64?: string; finishReason?: string }[];
+  };
+
+  const artifact = data.artifacts?.[0];
+  if (!artifact?.base64) {
+    throw new Error('[stability] 响应中无图像数据');
+  }
+
+  if (artifact.finishReason && artifact.finishReason !== 'SUCCESS') {
+    throw new Error(`[stability] 生成未成功完成: ${artifact.finishReason}`);
+  }
+
+  return {
+    url: `data:image/png;base64,${artifact.base64}`,
+    provider: 'stability',
+    cost: 1,
+    metadata: {
+      prompt: params.prompt,
+      generatedAt: new Date().toISOString(),
+      width: (params.options?.width as number) ?? 1024,
+      height: (params.options?.height as number) ?? 1024,
+    },
+  };
+}
+
+async function handleZhipu(config: ProviderConfig, params: GenerateParams): Promise<Record<string, unknown>> {
+  const model = config.model ?? 'cogview-3';
+
+  const body = {
+    model,
+    prompt: params.prompt,
+    size: (params.options?.size as string) ?? '1024x1024',
+  };
+
+  const response = await fetch(
+    'https://open.bigmodel.cn/api/paas/v4/images/generations',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify(body),
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`[zhipu] API 返回错误 ${response.status}: ${errorText}`);
+  }
+
+  const data = (await response.json()) as { data?: { url?: string }[] };
+  const imageUrl = data.data?.[0]?.url;
+
+  if (!imageUrl) {
+    throw new Error('[zhipu] 响应中无图像 URL');
+  }
+
+  return {
+    url: imageUrl,
+    provider: 'zhipu',
+    cost: 1,
+    metadata: {
+      prompt: params.prompt,
+      generatedAt: new Date().toISOString(),
+      width: 1024,
+      height: 1024,
+    },
+  };
+}
+
+async function handleAliyun(config: ProviderConfig, params: GenerateParams): Promise<Record<string, unknown>> {
+  const model = config.model ?? 'wanx2.0-t2i-turbo';
+
+  const submitBody = {
+    model,
+    input: { prompt: params.prompt },
+    parameters: {
+      size: (params.options?.size as string) ?? '1024*1024',
+      n: (params.options?.n as number) ?? 1,
+    },
+  };
+
+  const submitRes = await fetch(
+    'https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.apiKey}`,
+        'X-DashScope-Async': 'enable',
+      },
+      body: JSON.stringify(submitBody),
+    },
+  );
+
+  if (!submitRes.ok) {
+    const errorText = await submitRes.text();
+    throw new Error(`[aliyun] 提交任务失败 ${submitRes.status}: ${errorText}`);
+  }
+
+  const submitData = (await submitRes.json()) as {
+    output?: { task_id?: string; task_status?: string };
+    message?: string;
+  };
+
+  const taskId = submitData.output?.task_id;
+  if (!taskId) {
+    throw new Error(`[aliyun] 未获取到任务 ID: ${submitData.message ?? '未知错误'}`);
+  }
+
+  // 轮询任务结果
+  const maxAttempts = 30;
+  const interval = 2000;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((r) => setTimeout(r, interval));
+
+    const res = await fetch(
+      `https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`,
+      { headers: { Authorization: `Bearer ${config.apiKey}` } },
+    );
+
+    if (!res.ok) continue;
+
+    const data = (await res.json()) as {
+      output?: { task_status?: string; results?: { url?: string }[] };
+    };
+
+    const status = data.output?.task_status;
+
+    if (status === 'SUCCEEDED') {
+      const imageUrl = data.output?.results?.[0]?.url;
+      if (!imageUrl) throw new Error('[aliyun] 任务完成但无图像 URL');
+      return {
+        url: imageUrl,
+        provider: 'aliyun',
+        cost: 1,
+        metadata: {
+          prompt: params.prompt,
+          generatedAt: new Date().toISOString(),
+          width: 1024,
+          height: 1024,
+        },
+      };
+    }
+
+    if (status === 'FAILED') {
+      throw new Error('[aliyun] 任务执行失败');
+    }
+  }
+
+  throw new Error(`[aliyun] 任务超时，未在 60s 内完成`);
+}
+
+const GENERATE_HANDLERS: Record<string, (config: ProviderConfig, params: GenerateParams) => Promise<Record<string, unknown>>> = {
+  openai: handleOpenAI,
+  stability: handleStability,
+  zhipu: handleZhipu,
+  aliyun: handleAliyun,
+};
+
 async function handleGenerate(params: GenerateParams): Promise<Record<string, unknown>> {
   const config = loadConfig();
   if (!config) {
@@ -123,66 +371,23 @@ async function handleGenerate(params: GenerateParams): Promise<Record<string, un
     throw new Error(`Provider "${providerId}" 未配置 API Key`);
   }
 
-  // 目前仅实现 OpenAI 调用，其他 Provider 留空
-  if (providerId === 'openai') {
-    const baseURL = providerConfig.baseURL ?? 'https://api.openai.com/v1';
-    const model = providerConfig.model ?? 'gpt-image-2';
-    const quota = getQuota('openai', 5);
-
-    if (quota.used >= quota.total) {
-      throw new Error(`[${providerId}] 今日免费额度已用尽 (${quota.used}/${quota.total})`);
-    }
-
-    const body = {
-      model,
-      prompt: params.prompt,
-      n: (params.options?.n as number) ?? 1,
-      size: (params.options?.size as string) ?? '1024x1024',
-      quality: (params.options?.quality as string) ?? 'standard',
-      response_format: 'url',
-    };
-
-    const response = await fetch(`${baseURL}/images/generations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${providerConfig.apiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`[${providerId}] API 返回错误 ${response.status}: ${errorText}`);
-    }
-
-    const data = (await response.json()) as { data?: { url?: string }[] };
-    const imageUrl = data.data?.[0]?.url;
-
-    if (!imageUrl) {
-      throw new Error(`[${providerId}] 响应中无图像 URL`);
-    }
-
-    incrementQuota('openai');
-
-    return {
-      url: imageUrl,
-      provider: providerId,
-      cost: 0,
-      metadata: {
-        prompt: params.prompt,
-        generatedAt: new Date().toISOString(),
-        width: 1024,
-        height: 1024,
-      },
-    };
+  const quota = getQuota(providerId);
+  if (quota.total !== Infinity && quota.used >= quota.total) {
+    throw new Error(`[${providerId}] 今日额度已用尽 (${quota.used}/${quota.total})`);
   }
 
-  throw new Error(`Provider "${providerId}" 暂未支持`);
+  const handler = GENERATE_HANDLERS[providerId];
+  if (!handler) {
+    throw new Error(`Provider "${providerId}" 暂未支持`);
+  }
+
+  const result = await handler(providerConfig, params);
+  incrementQuota(providerId);
+  return result;
 }
 
 export const imageIpc = {
   handleGenerate,
   getProviders,
-  getQuota: (providerId: string) => getQuota(providerId, 5),
+  getQuota,
 };

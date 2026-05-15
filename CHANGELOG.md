@@ -59,3 +59,31 @@
 - `electron/main.ts`：IPC handlers 替换为真实调用
 - `ImageGrid.tsx`：从空状态占位升级为 store 驱动的图像卡片网格
 
+---
+
+## [0.3.0] - 2026-05-15
+
+### Added
+
+- **Stability AI Provider**：SD 系列 Adapter，REST API 调用，base64 图像响应
+- **智谱 CogView Provider**：中文 Prompt 友好，国内合规环境首选
+- **阿里云通义万象 Provider**：异步任务 + 轮询模式，企业级生产备用
+- **Electron IPC 多 Provider 支持**：`GENERATE_HANDLERS` 模式，主进程统一管理 API Key
+- **结果持久化层**：localStorage 封装，自动保存/加载，上限 500 条自动裁剪
+- **历史记录页面**：Provider 筛选 + 日期排序 + 刷新，复用 ImageGrid 组件
+- **图像保存到本地**：Electron save dialog + 数据下载，支持 PNG/JPG 格式
+- **ImageCard 操作增强**：保存到本地（Electron） / 复制 URL（Web）降级、重新生成（retry）
+- **每日主题自动 Prompt**：7 套主题模板按星期轮换，点击填充 Prompt
+
+### Changed
+
+- `generationStore.ts`：新增持久化集成 + retryGenerate action
+- `ImageGrid.tsx`：支持外部 results/loading props，可复用为通用网格
+- `ImageCard.tsx`：新增保存和重新生成按钮 + toast 提示
+- `App.tsx`：历史页接入 HistoryPage，每日页接入 DailyTheme
+- `Sidebar.tsx`：版本号更新为 v0.2.0
+- `electron/main.ts`：注册 file:save-image IPC handler
+- `electron/preload.ts`：暴露 saveImage API
+- `electron/ipc/imageGeneration.ts`：重构为 handler map 模式，支持 openai/stability/zhipu/aliyun
+- `config/local.example.json`：新增 stability/engineId、zhipu/model、aliyun/model 字段
+
