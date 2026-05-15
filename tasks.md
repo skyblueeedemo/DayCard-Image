@@ -237,7 +237,7 @@
 - [x] 图像可保存到本地磁盘（Electron save dialog）
 - [x] 失败后可从 ImageCard 一键重试
 - [x] 每日主题自动填充 Prompt（点击「今日抽卡」即带主题）
-- [ ] 阶段提交可打 tag v0.3.0（待 commit + tag）
+- [x] 阶段提交可打 tag v0.3.0（已 commit + tag）
 
 ---
 
