@@ -108,4 +108,7 @@
 ### Fixed
 
 - `build:electron` 脚本缺少 `tsc -p tsconfig.electron.json` 步骤，改为 `npm run build && electron-builder`
+- vitest 测试超时：ProviderManager retry 测试改用 fake timers 跳过退避延时
+- vitest mock 提升问题：generationStore 测试 `vi.mock` 变量改用 `vi.hoisted()`
+- postcss.config.js ESM/CommonJS 类型警告：改用 `module.exports`
 
