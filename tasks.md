@@ -399,7 +399,7 @@
 - [x] Ctrl+Enter 触发生成，Esc 关闭错误提示
 - [x] `npm run build:electron` 构建成功
 - [x] README.md 包含安装、开发、构建完整指引
-- [ ] 阶段提交可打 tag v1.0.0（待 commit + tag）
+- [x] 阶段提交可打 tag v1.0.0（已 commit + tag）
 
 ---
 
