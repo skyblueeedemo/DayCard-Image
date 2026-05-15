@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
+import { imageIpc } from './ipc/imageGeneration';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -32,19 +33,33 @@ function createWindow(): void {
 // ─── IPC Handlers ───────────────────────────────────────
 function registerIpcHandlers(): void {
   ipcMain.handle('image:generate', async (_event, params) => {
-    // 由 ProviderManager 调度，此处为占位
-    console.log('[IPC] image:generate', params);
-    return { status: 'ok', message: 'not yet implemented' };
+    try {
+      const result = await imageIpc.handleGenerate(params);
+      return { status: 'ok', data: result };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '生成失败';
+      return { status: 'error', message };
+    }
   });
 
   ipcMain.handle('provider:list', async () => {
-    console.log('[IPC] provider:list');
-    return { status: 'ok', providers: [] };
+    try {
+      const providers = imageIpc.getProviders();
+      return { status: 'ok', providers };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '获取 Provider 列表失败';
+      return { status: 'error', message, providers: [] };
+    }
   });
 
   ipcMain.handle('quota:get', async (_event, providerId: string) => {
-    console.log('[IPC] quota:get', providerId);
-    return { used: 0, total: 0, unit: 'count' as const };
+    try {
+      const quota = imageIpc.getQuota(providerId);
+      return { status: 'ok', data: quota };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '获取配额失败';
+      return { status: 'error', message };
+    }
   });
 }
 
