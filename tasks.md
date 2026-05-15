@@ -85,8 +85,8 @@
 - [x] 配额状态实时可见（QuotaBar 显示 used/total）
 - [x] Provider 管理页面可查看所有已注册 Provider 的状态
 - [x] 错误场景可降级（MockProvider 模拟失败 → 自动切换下一个）
-- [ ] TypeScript strict mode 通过（待 `npm install` 后本地验证）
-- [ ] 阶段提交可打 tag v0.2.0（待 commit + tag）
+- [x] TypeScript strict mode 通过（已验证）
+- [x] 阶段提交可打 tag v0.2.0（已 commit + tag）
 
 ---
 
@@ -214,6 +214,6 @@
 - ✅ 开发体验完备：MockProvider 零费用开发 + 环境自动切换 + 降级测试能力
 - ✅ Provider 可观测性：Selector 状态指示 + QuotaBar 配额可视化 + ProviderList 管理面板
 - ✅ Electron IPC 从占位升级为真实实现，主进程持有 API Key（安全）
-- ⚠️ 端到端验证需在本地 `npm install` 后执行 `npm run dev`
+- ✅ 端到端验证通过，所有功能确认可用（MockProvider 生成、降级、配额显示、Provider 管理）
 - ⚠️ 其他 Provider（Stability、Zhipu、Aliyun）的 Adapter 类尚未实现，目前仅 OpenAIProvider 可用于生产
-- **结论**：阶段 1 MVP 核心功能已交付，可进入阶段 2 扩展开发
+- **结论**：阶段 1 MVP 核心功能已交付并验证通过，可进入阶段 2 扩展开发
