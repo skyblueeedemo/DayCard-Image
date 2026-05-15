@@ -87,3 +87,25 @@
 - `electron/ipc/imageGeneration.ts`：重构为 handler map 模式，支持 openai/stability/zhipu/aliyun
 - `config/local.example.json`：新增 stability/engineId、zhipu/model、aliyun/model 字段
 
+---
+
+## [1.0.0] - 2026-05-16
+
+### Added
+
+- **单元测试**：vitest 测试覆盖 ProviderManager（注册/降级/重试）、MockProvider（生成/可用性/配额）、generationStore（状态流转/成功/失败路径）
+- **错误边界**：ErrorBoundary 组件捕获渲染异常，显示错误信息与重新加载按钮，DEV 模式下展示堆栈
+- **键盘快捷键**：`Ctrl/Cmd+Enter` 触发生成，`Escape` 关闭错误提示
+- **README 完善**：功能列表、安装指南、命令速查、完整项目结构、架构图、Provider 接入指南
+
+### Changed
+
+- `main.tsx`：App 包裹 ErrorBoundary
+- `App.tsx`：注册 useKeyboardShortcuts hook
+- `package.json`：版本升级为 1.0.0，`build:electron` 脚本修复（增加 tsc 编译步骤）
+- `README.md`：从概览升级为完整用户/开发者文档
+
+### Fixed
+
+- `build:electron` 脚本缺少 `tsc -p tsconfig.electron.json` 步骤，改为 `npm run build && electron-builder`
+

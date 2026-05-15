@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import Sidebar from '@/components/Sidebar';
 import ImageGrid from '@/components/ImageGrid/ImageGrid';
 import PromptInput from '@/components/DailyCard/PromptInput';
@@ -9,6 +10,8 @@ import HistoryPage from '@/components/History/HistoryPage';
 import DailyTheme from '@/components/DailyCard/DailyTheme';
 
 export default function App() {
+  useKeyboardShortcuts();
+
   const [activePage, setActivePage] = useState<
     'daily' | 'history' | 'providers' | 'settings'
   >('daily');

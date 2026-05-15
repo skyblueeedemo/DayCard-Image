@@ -1,6 +1,6 @@
 {
   "name": "daycard-image",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "拾光匣 - 跨平台 AI 图像生成桌面应用",
   "main": "dist-electron/main.js",
   "author": "DayCard-Image Team",
@@ -9,7 +9,7 @@
     "dev": "vite",
     "dev:electron": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "vite build && tsc -p tsconfig.electron.json",
-    "build:electron": "vite build && electron-builder",
+    "build:electron": "npm run build && electron-builder",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
