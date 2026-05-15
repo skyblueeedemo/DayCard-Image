@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { IImageProvider, ImageResult, GenerateOptions, QuotaInfo } from '../IImageProvider';
 import { ProviderManager } from '../ProviderManager';
 
@@ -99,31 +99,46 @@ describe('ProviderManager', () => {
   });
 
   describe('generate', () => {
+    // 使用 fake timers 跳过 ProviderManager 的指数退避延时
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('should return result from available provider', async () => {
       const p = new TestProvider('a', 1);
       manager.register(p);
-      const result = await manager.generate('test prompt');
+      const promise = manager.generate('test prompt');
+      await vi.runAllTimersAsync();
+      const result = await promise;
       expect(result.provider).toBe('a');
       expect(result.url).toContain('a.png');
     });
 
     it('should fallback to next provider on failure', async () => {
-      const p1 = new TestProvider('a', 1, true); // fails
+      const p1 = new TestProvider('a', 1, true);
       const p2 = new TestProvider('b', 2);
       manager.register(p1);
       manager.register(p2);
-      const result = await manager.generate('test');
+      const promise = manager.generate('test');
+      await vi.runAllTimersAsync();
+      const result = await promise;
       expect(result.provider).toBe('b');
     });
 
     it('should throw when all providers fail', async () => {
       manager.register(new TestProvider('a', 1, true));
       manager.register(new TestProvider('b', 2, true));
-      await expect(manager.generate('test')).rejects.toThrow('所有 Provider 均生成失败');
+      const promise = manager.generate('test');
+      await vi.runAllTimersAsync();
+      await expect(promise).rejects.toThrow('所有 Provider 均生成失败');
     });
 
     it('should throw when no providers available', async () => {
-      const p = new TestProvider('a', 1, false, false); // unavailable
+      const p = new TestProvider('a', 1, false, false);
       manager.register(p);
       await expect(manager.generate('test')).rejects.toThrow('所有 Provider 均不可用');
     });
@@ -131,7 +146,9 @@ describe('ProviderManager', () => {
     it('should update currentProviderId after successful generation', async () => {
       manager.register(new TestProvider('a', 1, true));
       manager.register(new TestProvider('b', 2));
-      await manager.generate('test');
+      const promise = manager.generate('test');
+      await vi.runAllTimersAsync();
+      await promise;
       expect(manager.getCurrentProviderId()).toBe('b');
     });
   });

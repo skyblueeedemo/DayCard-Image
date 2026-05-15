@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-// Mock persistenceStore before importing the store
+// 变量必须在 vi.mock 之前定义（hoisted）
+const { mockGenerate, mockSwitchTo, mockGetCurrentProviderId } = vi.hoisted(() => ({
+  mockGenerate: vi.fn(),
+  mockSwitchTo: vi.fn(),
+  mockGetCurrentProviderId: vi.fn(() => 'mock'),
+}));
+
 vi.mock('../persistenceStore', () => ({
   persistenceStore: {
     load: vi.fn(() => []),
@@ -9,11 +15,6 @@ vi.mock('../persistenceStore', () => ({
     clearAll: vi.fn(),
   },
 }));
-
-// Mock ProviderManager
-const mockGenerate = vi.fn();
-const mockSwitchTo = vi.fn();
-const mockGetCurrentProviderId = vi.fn(() => 'mock');
 
 vi.mock('@/providers/ProviderManager', () => ({
   providerManager: {
