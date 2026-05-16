@@ -1,3 +1,4 @@
+import { app } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { quotaService } from '../services/QuotaService';
@@ -29,7 +30,9 @@ interface ProviderMeta {
 }
 
 function loadConfig(): Config | null {
-  const configPath = path.join(__dirname, '..', '..', 'config', 'local.json');
+  const configPath = app.isPackaged
+    ? path.join(app.getPath('userData'), 'config.json')
+    : path.join(__dirname, '..', '..', 'config', 'local.json');
   try {
     const raw = fs.readFileSync(configPath, 'utf-8');
     return JSON.parse(raw);
@@ -43,44 +46,45 @@ function getProviders(): ProviderMeta[] {
   const config = loadConfig();
   const providers: ProviderMeta[] = [];
 
+  // Mock 始终可用
+  providers.push({ id: 'mock', name: 'Mock 模型服务 (Dev)', priority: 0, available: true });
+
   if (config?.providers.openai?.apiKey) {
-    providers.push({
-      id: 'openai',
-      name: 'GPT-image-2',
-      priority: 1,
-      available: true,
-    });
+    providers.push({ id: 'openai', name: 'GPT-image-2', priority: 1, available: true });
   }
 
-  // 其他 Provider 按需添加（对应 API Key 存在时标记为可用）
   if (config?.providers.stability?.apiKey) {
-    providers.push({
-      id: 'stability',
-      name: 'Stability AI',
-      priority: 2,
-      available: true,
-    });
+    providers.push({ id: 'stability', name: 'Stability AI', priority: 2, available: true });
   }
 
   if (config?.providers.zhipu?.apiKey) {
-    providers.push({
-      id: 'zhipu',
-      name: '智谱 CogView',
-      priority: 3,
-      available: true,
-    });
+    providers.push({ id: 'zhipu', name: '智谱 CogView', priority: 3, available: true });
   }
 
   if (config?.providers.aliyun?.apiKey) {
-    providers.push({
-      id: 'aliyun',
-      name: '阿里云通义万象',
-      priority: 4,
-      available: true,
-    });
+    providers.push({ id: 'aliyun', name: '阿里云通义万象', priority: 4, available: true });
   }
 
   return providers;
+}
+
+// Mock handler — 返回占位图
+async function handleMock(_config: ProviderConfig, params: GenerateParams): Promise<Record<string, unknown>> {
+  const width = 1024;
+  const height = 1024;
+  // 模拟 800ms 网络延迟
+  await new Promise((r) => setTimeout(r, 800));
+  return {
+    url: `https://placehold.co/${width}x${height}/a78bfa/ffffff?text=MOCK`,
+    provider: 'mock',
+    cost: 0,
+    metadata: {
+      prompt: params.prompt,
+      generatedAt: new Date().toISOString(),
+      width,
+      height,
+    },
+  };
 }
 
 async function handleOpenAI(config: ProviderConfig, params: GenerateParams): Promise<Record<string, unknown>> {
@@ -247,7 +251,6 @@ async function handleAliyun(config: ProviderConfig, params: GenerateParams): Pro
     },
   };
 
-  // 部分模型支持负向提示词
   if (params.options?.negativePrompt) {
     (body.parameters as Record<string, unknown>).negative_prompt = params.options.negativePrompt;
   }
@@ -308,6 +311,7 @@ async function handleAliyun(config: ProviderConfig, params: GenerateParams): Pro
 }
 
 const GENERATE_HANDLERS: Record<string, (config: ProviderConfig, params: GenerateParams) => Promise<Record<string, unknown>>> = {
+  mock: handleMock,
   openai: handleOpenAI,
   stability: handleStability,
   zhipu: handleZhipu,
@@ -315,16 +319,23 @@ const GENERATE_HANDLERS: Record<string, (config: ProviderConfig, params: Generat
 };
 
 async function handleGenerate(params: GenerateParams): Promise<Record<string, unknown>> {
+  const providerId = params.providerId ?? 'openai';
+
+  // Mock 无需配置文件
+  if (providerId === 'mock') {
+    const handler = GENERATE_HANDLERS[providerId];
+    return await handler!({} as ProviderConfig, params);
+  }
+
   const config = loadConfig();
   if (!config) {
     throw new Error('未找到配置文件 config/local.json');
   }
 
-  const providerId = params.providerId ?? 'openai';
   const providerConfig = config.providers[providerId];
 
   if (!providerConfig?.apiKey) {
-    throw new Error(`Provider "${providerId}" 未配置 API Key`);
+    throw new Error(`模型服务 "${providerId}" 未配置 API Key`);
   }
 
   const modelId = (params.options?.model as string) ?? undefined;
@@ -338,7 +349,7 @@ async function handleGenerate(params: GenerateParams): Promise<Record<string, un
 
   const handler = GENERATE_HANDLERS[providerId];
   if (!handler) {
-    throw new Error(`Provider "${providerId}" 暂未支持`);
+    throw new Error(`模型服务 "${providerId}" 暂未支持`);
   }
 
   const MAX_VALIDATION_RETRIES = 2;

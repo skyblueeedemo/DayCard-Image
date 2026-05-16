@@ -25,27 +25,27 @@ export default function Step1ApiKey({ formData, onChange }: Step1ApiKeyProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="text-center mb-2">
-        <h1 className="text-xl font-bold text-white mb-2">欢迎使用拾光匣</h1>
-        <p className="text-sm text-gray-400">请至少配置一个 API Key 以开始使用</p>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">欢迎使用拾光匣</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">请至少配置一个 API Key 以开始使用</p>
       </div>
 
       <div className="flex flex-col gap-3">
         {PROVIDER_FIELDS.map(({ key, label, placeholder }) => (
           <div key={key} className="flex flex-col gap-1">
-            <label className="text-xs text-gray-400">{label}</label>
+            <label className="text-xs text-gray-500 dark:text-gray-400">{label}</label>
             <input
               type="password"
               value={formData[key]}
               onChange={(e) => onChange({ ...formData, [key]: e.target.value })}
               placeholder={placeholder}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500"
             />
           </div>
         ))}
       </div>
 
       {!hasAnyKey && (
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
           也可以跳过，稍后在设置中配置
         </p>
       )}

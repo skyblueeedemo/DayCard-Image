@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
+  darkMode: 'class',
   content: [
     './index.html',
     './src/**/*.{ts,tsx}',
@@ -7,7 +8,6 @@ export default {
   theme: {
     extend: {
       colors: {
-        // 自定义暗色主题扩展
         surface: {
           DEFAULT: '#1f2937',
           hover: '#374151',

@@ -1,8 +1,8 @@
 # DayCard-Image（拾光匣）技术开发文档
 
-**版本**: v1.2.0（规划中）
-**更新时间**: 2026-05-16
-**状态**: 开发中（v1.0.0 / v1.1.0 已交付，v1.2.0 规划中）
+**版本**: dev1.3.0
+**更新时间**: 2026-05-17
+**状态**: 优化阶段 2 已交付（v1.0.0 ~ v1.2.0 已发布，dev1.3.0 开发中）
 
 ------
 
@@ -26,7 +26,7 @@
 
 ## 一、项目概述
 
-**DayCard-Image（拾光匣）** 是一款基于 **Electron + React** 构建的跨平台 AI 图像生成桌面应用，通过统一的 Provider Adapter 模式屏蔽各 AI 平台的接口差异，为用户提供一致、稳定的图像生成体验。核心卖点是**一键生成今日主题图像并设为桌面壁纸**。
+**DayCard-Image（拾光匣）** 是一款基于 **Electron + React** 构建的 AI 图像生成桌面应用——日更壁纸 · 拾光成匣。通过统一的 Provider Adapter 模式屏蔽各 AI 平台的接口差异，核心体验是**每日三组灵感主题，一键生成专属图像并设为桌面壁纸**。
 
 ### 1.1 设计目标
 
@@ -51,72 +51,82 @@
 | 版本 | 状态 | 核心特性 |
 |------|------|--------|
 | v0.1.0 | ✅ 已发布 | 项目骨架 + IImageProvider 接口 + OpenAIProvider |
-| v0.2.0 | ✅ 已发布 | MockProvider + 完整 MVP 链路 + Provider 管理 UI |
-| v0.3.0 | ✅ 已发布 | 多 Provider 接入 + 历史持久化 + 图像保存 + 每日主题 |
+| v0.2.0 | ✅ 已发布 | Mock 模型服务 + 完整 MVP 链路 + 模型服务管理 UI |
+| v0.3.0 | ✅ 已发布 | 多模型接入 + 历史持久化 + 图像保存 + 每日主题 |
 | v1.0.0 | ✅ 已发布 | 单元测试 + 错误边界 + 键盘快捷键 + README 完善 |
 | v1.1.0 | ✅ 已发布 | 壁纸设置 + 系统托盘 + 自启动 + 定时生图 + Onboarding |
-| v1.2.0 | ⏳ 规划中 | SQLite 配额 + Prompt 词库 + 离线检测 + 自动更新 |
+| v1.2.0 | ✅ 已发布 | 配额持久化 + Prompt 三维词库 + 离线检测 + 图像校验 + 自动更新 |
+| v1.2.1 | ✅ 已发布 | DashScope 8 模型 + API 配置页面 + 壁纸修复 + 持久化双写 |
+| dev1.3.0 | ✅ 已交付 | 主题扩展 + 收藏 + 外观双主题 + 壁纸删除 + 启动页 + 提示词扩充 + 打包修复 |
 
-### 1.4 项目目录结构（含规划模块）
+### 1.4 项目目录结构
 
 ```
 daycard-image/
 ├── electron/                     # Electron 主进程
 │   ├── main.ts
 │   ├── preload.ts
+│   ├── storage.ts               # JSON 文件存储（替代 electron-store）
 │   ├── tray/
-│   │   └── TrayManager.ts        # 系统托盘（v1.1.0）
+│   │   └── TrayManager.ts
 │   ├── services/
-│   │   ├── WallpaperService.ts   # 壁纸设置（v1.1.0）
-│   │   ├── AutoLaunchService.ts  # 开机自启（v1.1.0）
-│   │   ├── SchedulerService.ts   # 定时任务（v1.1.0）
-│   │   ├── QuotaService.ts       # SQLite 配额（v1.2.0）
-│   │   ├── NetworkService.ts     # 网络检测（v1.2.0）
-│   │   ├── ImageValidator.ts     # 图像校验（v1.2.0）
-│   │   └── UpdateService.ts      # 自动更新（v1.2.0）
+│   │   ├── WallpaperService.ts  # 壁纸设置 + 删除
+│   │   ├── AutoLaunchService.ts # 开机自启
+│   │   ├── SchedulerService.ts  # 定时任务
+│   │   ├── QuotaService.ts      # 配额持久化（JSON）
+│   │   ├── SettingsService.ts   # 设置持久化
+│   │   ├── NetworkService.ts    # 网络检测
+│   │   ├── ImageValidator.ts    # 图像质量校验
+│   │   └── UpdateService.ts     # 自动更新
 │   └── ipc/
-│       ├── imageGeneration.ts
+│       ├── imageGeneration.ts   # 生成调度（含 Mock）
 │       ├── fileSystem.ts
-│       ├── wallpaper.ts          # 壁纸 IPC（v1.1.0）
-│       ├── system.ts             # 系统 IPC（v1.1.0）
-│       └── quota.ts              # 配额 IPC（v1.2.0）
+│       ├── wallpaper.ts         # 壁纸设置 + 删除
+│       ├── system.ts            # 系统功能
+│       ├── quota.ts             # 配额
+│       ├── preference.ts        # 用户偏好
+│       └── config.ts            # API 配置读写
 ├── src/
 │   ├── components/
-│   │   ├── DailyCard/
-│   │   ├── ProviderSelector/
-│   │   ├── QuotaBar/
-│   │   ├── ImageGrid/
-│   │   ├── History/
-│   │   ├── ProviderManager/
-│   │   ├── Onboarding/           # 首次启动引导（v1.1.0）
+│   │   ├── DailyCard/           # 今日抽卡（主题 / 输入 / 横幅 / 离线）
+│   │   ├── ImageGrid/           # 图像卡片网格
+│   │   ├── ProviderSelector/    # 模型服务选择器
+│   │   ├── ApiConfig/           # API Key 配置页
+│   │   ├── Settings/            # 设置页
+│   │   ├── History/             # 历史记录 + 主题回顾
+│   │   ├── Favorites/           # 我的收藏
+│   │   ├── Onboarding/          # 首次引导
+│   │   ├── Toast/               # 全局 Toast
 │   │   ├── Sidebar.tsx
+│   │   ├── SplashScreen.tsx     # 启动页
 │   │   └── ErrorBoundary.tsx
 │   ├── providers/
-│   │   ├── IImageProvider.ts
-│   │   ├── ProviderManager.ts
-│   │   ├── bootstrap.ts
-│   │   ├── openai/
-│   │   ├── stability/
-│   │   ├── zhipu/
-│   │   ├── aliyun/
-│   │   └── mock/
-│   ├── prompts/                  # Prompt 词库（v1.2.0）
-│   │   ├── styleLibrary.json
-│   │   ├── sceneLibrary.json
-│   │   └── compositionLibrary.json
+│   │   ├── IImageProvider.ts    # 统一接口
+│   │   ├── ProviderManager.ts   # 调度 / 降级 / 重试
+│   │   ├── bootstrap.ts         # 按环境注册
+│   │   ├── openai/ stability/ zhipu/ aliyun/ mock/
+│   ├── prompts/                 # 主题词库
+│   │   ├── styleLibrary.json    # 15 风格
+│   │   ├── sceneLibrary.json    # 15 场景
+│   │   └── compositionLibrary.json  # 8 构图
 │   ├── store/
-│   │   ├── generationStore.ts
-│   │   └── persistenceStore.ts
+│   │   ├── generationStore.ts   # 生成状态 + removeResult
+│   │   ├── persistenceStore.ts  # 双写持久化
+│   │   ├── settingsStore.ts     # 设置状态（含外观）
+│   │   └── toastStore.ts        # Toast 通知
 │   ├── hooks/
 │   │   ├── useKeyboardShortcuts.ts
-│   │   ├── useWallpaper.ts       # 壁纸 hook（v1.1.0）
-│   │   └── useNetworkStatus.ts   # 网络状态 hook（v1.2.0）
+│   │   ├── useWallpaper.ts
+│   │   ├── useNetworkStatus.ts
+│   │   └── useAppearance.ts     # 外观主题同步
 │   └── utils/
-│       ├── dailyTheme.ts
-│       └── promptEngine.ts       # 词库引擎（v1.2.0）
+│       ├── dailyTheme.ts        # 每日主题 + 缓存 + 历史
+│       ├── promptEngine.ts      # 词库引擎（确定性随机）
+│       └── providerOrder.ts     # Provider + 模型排序
 ├── config/
-│   ├── local.example.json
-│   └── local.json
+│   └── local.example.json       # 配置模板（dev 使用）
+├── build/
+│   └── installer.nsh            # NSIS 卸载清理脚本
 └── package.json
 ```
 
@@ -128,19 +138,19 @@ daycard-image/
 
 | 层级 | 技术方案 | 说明 |
 |------|----------|------|
-| Desktop Runtime | Electron | 跨平台桌面壳，提供 Node.js 系统能力 |
+| Desktop Runtime | Electron 28 | 跨平台桌面壳，提供 Node.js 系统能力 |
 | UI Framework | React 18 | 组件化 UI，Hooks 驱动状态 |
-| 样式方案 | TailwindCSS | 原子化 CSS，快速构建 |
+| 样式方案 | TailwindCSS 3 | 原子化 CSS，darkMode: class 双主题 |
 | 状态管理 | Zustand | 轻量全局状态 |
 | API 接入 | Provider Adapter Pattern | 统一多平台接口 |
-| 语言 | TypeScript | 全栈类型安全 |
-| 构建工具 | Vite + electron-builder | 快速编译与打包 |
-| 测试框架 | vitest | 单元测试 |
-| 本地数据库 | better-sqlite3（v1.2.0） | 配额与生成日志持久化 |
-| 图像处理 | sharp（v1.1.0） | 壁纸尺寸裁剪与缩放 |
-| 定时任务 | node-cron（v1.1.0） | 每日自动生图调度 |
-| 自启动 | auto-launch（v1.1.0） | 跨平台开机自启 |
-| 自动更新 | electron-updater（v1.2.0） | 应用更新 |
+| 语言 | TypeScript 5 | 全栈类型安全 |
+| 构建工具 | Vite 5 + electron-builder 24 | 快速编译与打包 |
+| 测试框架 | vitest | 30 用例全部通过 |
+| 本地存储 | JSON 文件（userData）+ localStorage | 配额 / 设置 / 结果 / 排序 双写持久化 |
+| 图像处理 | sharp | 壁纸尺寸裁剪与缩放 |
+| 定时任务 | node-cron | 每日自动生图调度 |
+| 自启动 | auto-launch | 跨平台开机自启 |
+| 自动更新 | electron-updater | 应用更新（当前降级为 toast 提示） |
 
 ### 2.2 依赖版本要求
 
@@ -181,8 +191,8 @@ daycard-image/
 ┌─────────────────▼───────────────────────────────┐
 │               System Layer                       │
 │                  Electron                        │
-│  文件系统 · 壁纸设置 · 系统通知 · 托盘 · SQLite    │
-│  开机自启 · 自动更新 · 离线检测                    │
+│  文件系统 · 壁纸设置 · 系统通知 · 托盘 · JSON 存储  │
+│  开机自启 · 自动更新 · 离线检测 · 图像校验          │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -191,7 +201,7 @@ daycard-image/
 **UI Layer**
 - 负责用户交互与状态反馈
 - 组件化设计，状态驱动渲染
-- 关键页面：抽卡主页、Provider 管理、配额面板、历史记录、设置、Onboarding
+- 关键页面：抽卡主页、API 配置、配额面板、历史记录、收藏、设置、Onboarding
 
 **Application Layer**
 - Provider 热切换与调度
@@ -210,8 +220,8 @@ daycard-image/
 - 借助 Electron 提供文件读写、本地缓存
 - 壁纸设置（v1.1.0）
 - 系统托盘与通知（v1.1.0）
-- SQLite 数据库（v1.2.0）
-- 应用自动更新（v1.2.0）
+- JSON 文件存储（userData）+ localStorage 双写
+- 应用自动更新（electron-updater，当前降级为 toast 提示）
 
 ------
 
@@ -327,40 +337,17 @@ class ProviderManager {
 
 ### 5.4 配额系统
 
-**v1.0.0（当前）**：localStorage 简单记录，应用层维护。
+**当前方案**：JSON 文件存储（`electron/storage.ts` `readStore`/`writeStore`），按日按 Provider 记录到 `userData/quota.json`，保留 90 天历史。模型级配额通过 `config.json` 管理 `remaining` 字段，每次生成后减 1。
 
-**v1.2.0（升级目标）**：迁移至 SQLite，主进程统一管理，支持按日期查询，00:01 UTC+8 自动重置。
+**API**：
+- `QuotaService.getQuota(providerId)` → 返回今日 used/total
+- `QuotaService.getModelQuota(providerId, modelId)` → 返回模型级 used/total
+- `QuotaService.canGenerate(providerId, modelId?)` → 前置拦截
+- `QuotaService.incrementQuota(providerId, modelId?)` → 生成后 +1
 
-```sql
--- v1.2.0 数据库表结构
-CREATE TABLE quota_log (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  provider_id TEXT NOT NULL,
-  date TEXT NOT NULL,          -- YYYY-MM-DD 格式
-  used INTEGER DEFAULT 0,
-  total INTEGER DEFAULT 5,
-  reset_at TEXT
-);
-
-CREATE TABLE generation_log (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  image_url TEXT NOT NULL,
-  prompt TEXT,
-  provider_id TEXT,
-  style TEXT,
-  scene TEXT,
-  composition TEXT,
-  created_at TEXT,
-  is_favorite INTEGER DEFAULT 0
-);
-
-CREATE TABLE prompt_preference (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  dimension TEXT NOT NULL,     -- 'style' | 'scene' | 'composition'
-  value TEXT NOT NULL,
-  weight INTEGER DEFAULT 1
-);
-```
+**配额限制**：
+- OpenAI: 5 张/日
+- Stability AI / 智谱 CogView / 阿里云通义万象: 按量计费，无硬上限
 
 ------
 
@@ -466,38 +453,35 @@ SchedulerService（每日 08:00 触发）
 
 ### 7.1 IPC 通信通道
 
-**v1.0.0（已实现）**
+### 7.1 IPC 通信通道（当前版本）
 
 | Channel | 方向 | 描述 |
 |---------|------|------|
-| `image:generate` | Renderer → Main | 触发图像生成 |
-| `image:result` | Main → Renderer | 返回生成结果 |
-| `provider:list` | Renderer → Main | 获取 Provider 列表 |
-| `provider:switch` | Renderer → Main | 切换活跃 Provider |
-| `quota:get` | Renderer → Main | 获取配额信息 |
-| `quota:update` | Main → Renderer | 配额变更推送 |
+| `image:generate` | Renderer → Main | 触发图像生成（含 Mock 豁免） |
+| `provider:list` | Renderer → Main | 获取模型服务列表 |
 | `file:save-image` | Renderer → Main | 保存图像到本地 |
-
-**v1.1.0（新增）**
-
-| Channel | 方向 | 描述 |
-|---------|------|------|
 | `wallpaper:set` | Renderer → Main | 设置桌面壁纸 |
+| `wallpaper:delete` | Renderer → Main | 按日期删除壁纸文件 |
+| `quota:get` | Renderer → Main | 获取配额（Provider 级） |
+| `quota:get-model` | Renderer → Main | 获取配额（模型级） |
+| `quota:all` | Renderer → Main | 获取全部配额 |
+| `quota:history` | Renderer → Main | 配额历史 |
+| `preference:like` | Renderer → Main | 喜欢 + 词条权重 +1 |
+| `preference:unlike` | Renderer → Main | 取消喜欢 + 权重 -1 |
+| `preference:get-weights` | Renderer → Main | 读取权重 |
+| `preference:get-liked` | Renderer → Main | 读取喜欢列表 |
+| `config:get` | Renderer → Main | 读 API 配置（脱敏） |
+| `config:set` | Renderer → Main | 写 API 配置 |
+| `config:test` | Renderer → Main | 测试连接 |
+| `config:set-order` | Renderer → Main | 保存 Provider 排序 |
+| `settings:get` | Renderer → Main | 读设置 |
+| `settings:set` | Renderer → Main | 写设置（含外观） |
+| `results:load` | Renderer → Main | 加载生成结果 |
+| `results:save` | Renderer → Main | 保存生成结果 |
 | `system:auto-launch-get` | Renderer → Main | 读取自启动状态 |
-| `system:auto-launch-set` | Renderer → Main | 设置自启动开关 |
-| `system:is-first-launch` | Renderer → Main | 判断是否首次启动 |
-| `system:network-status` | Main → Renderer | 网络状态变更推送 |
-| `system:scheduler-trigger` | Main → Renderer | 定时任务触发通知 |
-
-**v1.2.0（新增）**
-
-| Channel | 方向 | 描述 |
-|---------|------|------|
-| `quota:increment` | Renderer → Main | 生成成功后配额 +1 |
-| `preference:like` | Renderer → Main | 标记喜欢 + 词条权重 +1 |
-| `preference:unlike` | Renderer → Main | 取消喜欢 |
-| `update:check` | Renderer → Main | 手动检查更新 |
-| `update:available` | Main → Renderer | 有新版本可用 |
+| `system:auto-launch-set` | Renderer → Main | 设置自启动 |
+| `system:is-first-launch` | Renderer → Main | 是否首次启动 |
+| `update:check` | Renderer → Main | 检查更新（当前降级） |
 
 ### 7.2 preload API 暴露（v1.1.0）
 
@@ -621,7 +605,7 @@ class LocalSDProvider implements IImageProvider {
 
 ------
 
-## 十、Mock Provider（开发测试专用）
+## 十、Mock 模型服务（开发测试专用）
 
 > **目标**：开发阶段零费用跑通完整流程，无需消耗真实 API 额度。
 
@@ -630,27 +614,19 @@ class LocalSDProvider implements IImageProvider {
 ```typescript
 class MockProvider implements IImageProvider {
   readonly id = 'mock';
-  readonly name = 'Mock Provider (Dev Only)';
+  readonly name = 'Mock 模型服务 (Dev Only)';
   readonly priority = 0;
 
-  private mockImageUrl = 'https://placehold.co/1024x1024/a78bfa/ffffff?text=MOCK';
-  private delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-
   async generate(prompt: string, options?: GenerateOptions): Promise<ImageResult> {
-    await this.delay(800);
+    await new Promise(r => setTimeout(r, 800));
     if (Math.random() < 0.1) {
       throw new Error('[Mock] 模拟随机失败，测试降级');
     }
     return {
-      url: this.mockImageUrl,
+      url: 'https://placehold.co/1024x1024/a78bfa/ffffff?text=MOCK',
       provider: this.id,
       cost: 0,
-      metadata: {
-        prompt,
-        generatedAt: new Date().toISOString(),
-        width: options?.width ?? 1024,
-        height: options?.height ?? 1024,
-      },
+      metadata: { prompt, generatedAt: new Date().toISOString(), width: 1024, height: 1024 },
     };
   }
 
@@ -661,19 +637,14 @@ class MockProvider implements IImageProvider {
 }
 ```
 
-### 10.2 可测试的场景矩阵
+### 10.2 生产环境隔离
 
-| 测试场景 | 实现方式 |
-|----------|----------|
-| 正常生成流程 | 直接返回占位图，默认行为 |
-| 模拟慢网络 | 调大 `delay` 数值（如 3000ms）|
-| 测试 Provider 降级 | 将 `isAvailable()` 改为返回 `false` |
-| 测试重试逻辑 | 前 N 次 `generate()` 抛出异常，第 N+1 次成功 |
-| 测试配额耗尽 | `getQuota()` 返回 `used === total` |
-| 测试离线场景 | `isAvailable()` 返回 `false` + 清空本地缓存 |
-| 测试图像校验失败 | 返回不可访问的 URL（v1.2.0）|
+Mock 通过 `import.meta.env.DEV` 条件注册：
+- `bootstrap.ts`：仅 DEV 模式注册到 ProviderManager
+- `ApiConfigPage`：`PROVIDER_LABELS` 使用 `import.meta.env.DEV` 条件展开，生产构建 tree-shake 掉
+- `electron/ipc/imageGeneration.ts`：`handleGenerate` 中 mock 提前返回，跳过 API Key 检查
 
-> MockProvider **仅用于开发与测试**，生产构建中通过环境变量完全排除。
+> Mock **仅用于开发与测试**，生产构建完全排除，API 配置页不可见。
 
 ------
 
@@ -791,7 +762,7 @@ class SchedulerService {
 
 ### 11.4 Onboarding 引导流程
 
-首次启动（`electron-store` 中 `firstLaunch` 为 `true`）时展示三步引导：
+首次启动（`settings.json` 中 `firstLaunch` 为 `true` 时，即未完成过 Onboarding）展示三步引导：
 
 | 步骤 | 内容 | 说明 |
 |------|------|------|
@@ -803,69 +774,27 @@ class SchedulerService {
 
 ------
 
-## 十二、质量强化模块（v1.2.0）
+## 十二、质量强化与持续优化模块
 
-### 12.1 Prompt 三维词库
+### 12.1 Prompt 三维词库（dev1.3.0 扩充至 15/15/8）
 
-将固定的 7 套主题模板升级为结构化三维词库，基于日期 seed 稳定随机抽取组合。
+将固定的 7 套主题模板升级为结构化三维词库，基于日期 seed 确定性随机抽取组合。当前规模：**15 风格 × 15 场景 × 8 构图 = 1,800 组合**。
 
-**词库结构示例**：
+**词库结构**：
 
 ```json
-// src/prompts/styleLibrary.json
-{
-  "styles": [
-    { "id": "cyberpunk", "label": "赛博朋克", "prompt": "cyberpunk aesthetic, neon lights" },
-    { "id": "ink", "label": "水墨画", "prompt": "Chinese ink painting, brush strokes" },
-    { "id": "starscape", "label": "星空摄影", "prompt": "astrophotography, milky way" },
-    { "id": "oil", "label": "油画", "prompt": "oil painting, impressionist style" },
-    { "id": "minimal", "label": "极简主义", "prompt": "minimalist, clean, geometric" }
-  ]
-}
-
-// src/prompts/sceneLibrary.json
-{
-  "scenes": [
-    { "id": "city", "label": "城市夜景", "prompt": "urban cityscape at night" },
-    { "id": "nature", "label": "自然山水", "prompt": "mountains and rivers, landscape" },
-    { "id": "space", "label": "宇宙星云", "prompt": "cosmic nebula, deep space" },
-    { "id": "portrait", "label": "人物肖像", "prompt": "portrait, expressive face" },
-    { "id": "architecture", "label": "建筑空间", "prompt": "architectural photography" }
-  ]
-}
-
-// src/prompts/compositionLibrary.json
-{
-  "compositions": [
-    { "id": "wide", "prompt": "8K wide-angle lens, ultra-detailed" },
-    { "id": "golden", "prompt": "golden ratio composition, rule of thirds" },
-    { "id": "cinematic", "prompt": "cinematic lighting, dramatic shadows" }
-  ]
-}
+// src/prompts/styleLibrary.json — 15 条（赛博朋克、水墨画、油画、极简主义、水彩、星空摄影、复古胶片、动漫、素描、波普、巴洛克、浮世绘、超现实、像素、彩绘玻璃）
+// src/prompts/sceneLibrary.json — 15 条（城市夜景、山川湖海、奇幻森林、海上日落、宇宙星云、雪域山峰、樱花雨巷、沙漠星河、深海秘境、秋枫古道、雨巷咖啡馆、薰衣草海、雷暴荒原、冰洞极光、天台黄昏）
+// src/prompts/compositionLibrary.json — 8 条（超广角、黄金构图、特写微距、航拍视角、镜面对称、倾斜构图、框中框、引导线）
 ```
 
-**PromptEngine 实现**：
+**PromptEngine 核心函数**：
 
 ```typescript
-// src/utils/promptEngine.ts
-function buildDailyPrompt(date: Date = new Date()): {
-  prompt: string;
-  style: string;
-  scene: string;
-  composition: string;
-} {
-  const seed = dateSeed(date);  // 同一天多次调用结果一致
-  const style = weightedRandom(styles, weights['style'], seed);
-  const scene = weightedRandom(scenes, weights['scene'], seed + 1);
-  const comp = weightedRandom(compositions, weights['composition'], seed + 2);
-
-  return {
-    prompt: `${style.prompt}, ${scene.prompt}, ${comp.prompt}, high quality, detailed`,
-    style: style.label,
-    scene: scene.label,
-    composition: comp.id,
-  };
-}
+// 单组 Prompt
+buildDailyPrompt(date, weights?) → { prompt, style, scene, composition }
+// 多组 Prompt（当前每日 3 组）
+buildDailyPrompts(date, count, weights?) → DailyPrompt[]
 ```
 
 ### 12.2 用户偏好权重系统
@@ -906,16 +835,16 @@ function useNetworkStatus() {
 
 ## 十三、附录
 
-### 13.1 数据流总览（v1.2.0）
+### 13.1 数据流总览
 
 ```
 用户输入 Prompt / 自动触发（定时任务）
     │
     ▼
-配额检查（SQLite QuotaService）
+配额检查（QuotaService JSON）
     │ 耗尽 → 拦截 + 提示
     ▼
-Provider Router（优先级 + 可用性）
+模型服务路由（优先级 + 可用性）
     │
     ▼
 Image API 调用（各平台 Adapter）
@@ -927,7 +856,7 @@ Image API 调用（各平台 Adapter）
 Result Normalize（归一化 ImageResult）
     │
     ▼
-写入 generation_log（SQLite）
+写入 quota.json + results.json（双写）
     │
     ▼
 本地 Cache + persistenceStore
@@ -937,6 +866,9 @@ UI Display（React 渲染卡片）
     │
     ▼（用户选择「设为壁纸」）
 WallpaperService → 裁剪 → 归档 → 系统壁纸 API
+    │
+    ▼（用户选择「不喜欢」）
+删除记录 + 删除本地壁纸文件 → UI 实时刷新
 ```
 
 ### 13.2 项目优势总结
@@ -947,7 +879,7 @@ WallpaperService → 裁剪 → 归档 → 系统壁纸 API
 | Electron 原生体验 | 壁纸、托盘、通知、离线、自启动完整支持 |
 | React 高质量 UI | 组件化、状态驱动、错误边界、键盘快捷键 |
 | Adapter 插件架构 | 新 Provider 接入成本极低（≈ 10 分钟）|
-| 成本可控 | 配额系统（v1.2.0 升级为 SQLite 硬拦截）|
+| 成本可控 | 配额 JSON 持久化 + 前置硬拦截 |
 | 用户习惯闭环 | 每日自动生图 + 壁纸设置，形成日常仪式感 |
 | 词库个性化 | 偏好标注 → 权重迭代 → 越用越懂你 |
 | 高扩展性 | 支持本地模型、视频、Agent 等未来方向 |
@@ -956,15 +888,17 @@ WallpaperService → 裁剪 → 归档 → 系统壁纸 API
 
 | 术语 | 说明 |
 |------|------|
-| Provider | AI 图像生成服务提供方（如 OpenAI、阿里云）|
-| Adapter | 将具体 Provider API 适配为统一接口的实现层 |
-| DayCard | 每日抽卡功能，系统自动生成今日主题图像 |
-| Quota | 各 Provider 的调用配额，支持持久化与硬拦截 |
+| 模型服务 | AI 图像生成服务提供方（如 OpenAI、阿里云 DashScope），原称 Provider |
+| Adapter | 将具体平台 API 适配为统一接口的实现层 |
+| DayCard | 每日抽卡功能，每日三组灵感主题生成专属图像 |
+| Quota | 各模型服务的调用配额，JSON 持久化 + 前置硬拦截 |
 | IPC | Electron 主进程与渲染进程之间的通信机制 |
-| Fallback | Provider 失败时自动切换备用 Provider 的机制 |
-| PromptEngine | 基于三维词库与权重的 Prompt 随机生成引擎（v1.2.0）|
-| WallpaperService | 跨平台壁纸设置服务，含分辨率适配与归档（v1.1.0）|
-| Onboarding | 首次启动引导流程，帮助用户完成基础配置（v1.1.0）|
+| Fallback | 主服务失败时自动切换备用的机制 |
+| PromptEngine | 基于三维词库与权重的 Prompt 确定性随机生成引擎 |
+| WallpaperService | 跨平台壁纸设置服务，含分辨率适配、归档、删除 |
+| Onboarding | 首次启动引导流程，帮助用户完成基础配置 |
+| SplashScreen | 启动页，首次启动 3s 淡入淡出展示品牌 |
+| 外观主题 | 暗夜/亮白双模式，`useAppearance` hook + localStorage 持久化 |
 
 ------
 

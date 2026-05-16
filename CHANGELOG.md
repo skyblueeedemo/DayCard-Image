@@ -10,6 +10,67 @@
 
 ---
 
+## [dev1.3.0] - 2026-05-16
+
+> 优化阶段 2：主题扩展 + 收藏 + 外观主题 + 壁纸删除 + 重构合并 — 6 个新文件，35 个修改文件
+
+### Added
+
+- **每日主题 3 组**：`promptEngine.buildDailyPrompts()` 每日随机 3 组独立主题并排展示，点击任一填充 Prompt
+- **每日主题持久化**：生成后自动存 localStorage，90 天保留，`dailyTheme.getThemeHistory()` 按日期回溯
+- **主题回顾 Tab**：侧边栏 📅 入口，按日期折叠展示历史每日主题，点击复用 Prompt
+- **我的收藏 Tab**：侧边栏 ❤ 入口，展示所有点过"喜欢"的图像，复用 ImageGrid，空状态引导文案
+- **外观主题**：设置页「暗夜模式 🌙」/「亮白模式 ☀」切换，Tailwind `darkMode: 'class'`，`useAppearance` hook 管理 `<html>` class
+- **壁纸删除「不喜欢」**：ImageCard 新增 👎 按钮，弹出确认对话框（含"以后不再提示" checkbox），确认后清除记录 + 删除本地壁纸文件（`wallpaper:delete` IPC）
+- **Like/Dislike 图标对称**：👍 喜欢 / 👍 已喜欢 + 👎 不喜欢
+- **用户排序**：API 配置 + 模型服务列表支持 ↑↓ 排序，`providerOrder` 持久化到 localStorage，ProviderSelector 下拉同步顺序
+- **模型排序**：API 配置页 DashScope 模型列表支持 ↑↓ 排序，`loadModelOrder`/`saveModelOrder` 持久化，ProviderSelector 模型下拉同步顺序
+- **Mock 全链路闭环**：Mock 在 Electron 生成 IPC 中跳过 API Key/配置文件检查，直接返回占位图，无 config 也能测试
+- **启动页**：`SplashScreen` 组件，首次启动展示 3s（镜头光圈 SVG + "拾光匣" + "每日一帧，拾起时光"），淡入淡出过渡，localStorage 标记控制
+- **欢迎横幅**：每日抽卡页顶部 `WelcomeBanner`，显示「每日三组灵感主题，一键生成专属图像，设为壁纸，换种心情」+「开始今天的抽卡吧！」
+- **首次使用引导**：首次进入每日抽卡页，展示样例主题卡片 +「开始今天的抽卡吧！」按钮，点击后生成真随机主题并自动选中，之后永不出现
+- **提示词扩充**：风格 7→15 条，场景 6→15 条，构图 4→8 条，总组合 168→1,800
+- **NSIS 卸载清理**：`build/installer.nsh` 自定义卸载脚本 + `deleteAppDataOnUninstall`，卸载时删除 `%APPDATA%/daycard-image/`、`Pictures/DayCard-Image/`、`%LOCALAPPDATA%/daycard-image/`
+
+### Changed
+
+- **Provider → "模型服务"**：全局用户可见文案替换（Sidebar、ProviderSelector、ProviderList、Onboarding、HistoryPage、ApiConfigPage、MockProvider、IPC 错误消息）
+- **版本号**：Sidebar / Settings → dev1.3.0
+- **菜单栏隐藏**：`Menu.setApplicationMenu(null)` 移除 Electron 顶部 File/Edit/View 菜单
+- **模型服务合并入 API 配置**：移除侧边栏"模型服务"独立入口，API 配置卡片增加「切换」按钮，排序功能保留
+- **ProviderSelector 去优先级**：下拉列表不再显示 P0/P1 标签
+- **图标对称**：♡/❤ → 👍
+- **`tailwind.config.js`**：ESM → CommonJS（修复 CJS 模式下 Tailwind 静默回退导致 dark: 变体不生成）
+- **`generationStore`**：新增 `removeResult` action 支持实时移除
+- **`useAppearance`**：渲染期间立即同步 DOM class + localStorage 兜底读写
+- **App.tsx**：顶层调用 `useAppearance()` 覆盖 hydration/onboarding 阶段
+- **夜间/亮白双主题**：20 个组件 className 改造，`bg-gray-N` → `bg-white/gray-50 dark:bg-gray-N` 等
+- **Slogan**：「跨平台 AI 图像生成桌面应用」→「日更壁纸 · 拾光成匣」（package.json / README / 开发文档 / Settings 全局替换）
+- **检查更新**：移除 electron-updater 完整状态机 → 点击弹出 info toast「暂不支持在线升级，请关注 GitHub Releases」
+- **版本号**：`package.json` → `1.3.0-dev`（合法 semver），UI 仍显示 `dev1.3.0`
+
+### Fixed
+
+- **Tailwind dark: 变体不生成**：`tailwind.config.js` ESM 语法在 CJS 环境下被静默忽略 → 改为 `module.exports`
+- **Web 模式主题切换无效**：`updateSetting` 依赖 Electron IPC → `handleAppearance` 直接操作 DOM + localStorage 兜底
+- **排序保存失败**：`config:set-order` IPC 写 `config/local.json` 路径问题 → 改用 `localStorage('daycard-provider-order')`
+- **Mock "未配置 API Key"**：生成 IPC 对 mock 无豁免 → `handleGenerate` 中 mock 提前返回，跳过 config 检查
+- **Mock 在 API 配置不可见**：`PROVIDER_LABELS` 缺失 mock → 新增，展开后显示"无需配置"说明
+- **Mock 在模型服务标记不可用**：`ProviderList` 可用性检查无 mock 豁免 → 追加 `p.id === 'mock'` 强制可用
+- **启动页不可见**：首次启动后 `firstLaunch = false` 导致跳过 → 新增 `SplashScreen` 组件 + localStorage `daycard-splash-shown` 标记控制，清除后即可重测
+- **打包后 API 配置无反应**：`config/local.json` 在生产环境不存在 → `getConfigPath()` 分包判断 `app.isPackaged ? userData/config.json : config/local.json`
+- **打包后 Mock 仍显示**：`PROVIDER_LABELS` 硬编码 mock → `import.meta.env.DEV` 条件展开，生产构建 tree-shake 掉
+- **配额显示 ∞**：QuotaBar 优先读前端 Provider 硬编码值 → Electron 环境优先走 `quota:get`/`quota:get-model` IPC
+- **每日主题不更新**：`date.toISOString()` 取 UTC 时间，中国时区 8AM 前日期滞后 → 改为 `getFullYear/getMonth/getDate` 本地时间
+- **electron-builder 版本报错**：`"version": "dev1.3.0"` 非合法 semver → `"1.3.0-dev"`
+- **electron-builder winCodeSign 解压失败**：Windows 无法创建 macOS 符号链接 → 清缓存 + `signAndEditExecutable: false`
+
+### Dependencies
+
+- 移除: `electron-store`（已替换为 `electron/storage.ts` JSON 文件读写）
+
+---
+
 ## [1.2.1] - 2026-05-16
 
 > 优化阶段 1：API 配置 + DashScope 集成 + 壁纸修复 + 持久化修复 — 4 个新文件，23 个修改文件

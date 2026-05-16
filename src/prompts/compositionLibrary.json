@@ -2,5 +2,9 @@
   { "id": "wide-angle", "name": "超广角", "prompt": "ultra wide angle lens, 8K resolution, hyper detailed, expansive view, everything in sharp focus" },
   { "id": "golden-ratio", "name": "黄金构图", "prompt": "golden ratio composition, cinematic lighting, rule of thirds, masterful framing, professional cinematography" },
   { "id": "close-up", "name": "特写微距", "prompt": "close-up macro shot, shallow depth of field, creamy bokeh, intimate perspective, fine details visible" },
-  { "id": "drone-aerial", "name": "航拍视角", "prompt": "drone aerial view, bird's eye perspective, epic scale, sweeping panorama, top-down composition" }
+  { "id": "drone-aerial", "name": "航拍视角", "prompt": "drone aerial view, bird's eye perspective, epic scale, sweeping panorama, top-down composition" },
+  { "id": "symmetry", "name": "镜面对称", "prompt": "perfect mirror symmetry, reflection composition, balanced and harmonious, architectural precision, centered framing" },
+  { "id": "dutch-angle", "name": "倾斜构图", "prompt": "Dutch angle tilt, dynamic diagonal tension, edgy perspective, cinematic unease, action film composition" },
+  { "id": "frame-within", "name": "框中框", "prompt": "frame within a frame composition, natural window or archway, layered depth, voyeuristic intimacy, clever visual storytelling" },
+  { "id": "leading-lines", "name": "引导线", "prompt": "strong leading lines drawing eye to focal point, road or river converging to infinity, powerful depth, travel photography feel" }
 ]

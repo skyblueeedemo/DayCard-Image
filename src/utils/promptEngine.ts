@@ -58,33 +58,51 @@ class SeededRandom {
 }
 
 function dateString(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 export function buildDailyPrompt(
   date: Date = new Date(),
   weights?: Map<string, number>,
 ): DailyPrompt {
+  return buildDailyPrompts(date, 1, weights)[0];
+}
+
+export function buildDailyPrompts(
+  date: Date = new Date(),
+  count: number = 3,
+  weights?: Map<string, number>,
+): DailyPrompt[] {
   const dateStr = dateString(date);
-  const seed = hashDate(dateStr);
-  const rng = new SeededRandom(seed);
+  const results: DailyPrompt[] = [];
 
-  const styleIdx = rng.weightedIndex(styles.length, weights, 'style', styles);
-  const style = styles[styleIdx];
+  for (let i = 0; i < count; i++) {
+    const variant = `:v${i}`;
 
-  const sceneSeed = hashDate(dateStr + ':scene');
-  const sceneRng = new SeededRandom(sceneSeed);
-  const sceneIdx = sceneRng.weightedIndex(scenes.length, weights, 'scene', scenes);
-  const scene = scenes[sceneIdx];
+    const styleSeed = hashDate(dateStr + variant + ':style');
+    const styleRng = new SeededRandom(styleSeed);
+    const styleIdx = styleRng.weightedIndex(styles.length, weights, 'style', styles);
+    const style = styles[styleIdx];
 
-  const compSeed = hashDate(dateStr + ':comp');
-  const compRng = new SeededRandom(compSeed);
-  const compIdx = compRng.weightedIndex(compositions.length, weights, 'composition', compositions);
-  const composition = compositions[compIdx];
+    const sceneSeed = hashDate(dateStr + variant + ':scene');
+    const sceneRng = new SeededRandom(sceneSeed);
+    const sceneIdx = sceneRng.weightedIndex(scenes.length, weights, 'scene', scenes);
+    const scene = scenes[sceneIdx];
 
-  const prompt = `${style.prompt}, ${scene.prompt}, ${composition.prompt}, high quality, detailed, masterpiece`;
+    const compSeed = hashDate(dateStr + variant + ':comp');
+    const compRng = new SeededRandom(compSeed);
+    const compIdx = compRng.weightedIndex(compositions.length, weights, 'composition', compositions);
+    const composition = compositions[compIdx];
 
-  return { prompt, style, scene, composition };
+    const prompt = `${style.prompt}, ${scene.prompt}, ${composition.prompt}, high quality, detailed, masterpiece`;
+
+    results.push({ prompt, style, scene, composition });
+  }
+
+  return results;
 }
 
 export function getAllEntries(): {

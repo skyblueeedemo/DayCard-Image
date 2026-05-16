@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { ImageResult } from '@/providers/IImageProvider';
 import { useGenerationStore } from '@/store/generationStore';
 import { useWallpaper } from '@/hooks/useWallpaper';
+import { persistenceStore } from '@/store/persistenceStore';
 import { buildDailyPrompt } from '@/utils/promptEngine';
 
 interface ImageCardProps {
@@ -16,8 +17,27 @@ const providerColors: Record<string, string> = {
   aliyun: 'bg-orange-700 text-orange-200',
 };
 
+const SKIP_CONFIRM_KEY = 'daycard-skip-delete-confirm';
+
+function shouldSkipConfirm(): boolean {
+  try {
+    return localStorage.getItem(SKIP_CONFIRM_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function setSkipConfirm(skip: boolean): void {
+  try {
+    localStorage.setItem(SKIP_CONFIRM_KEY, String(skip));
+  } catch {
+    // ignore
+  }
+}
+
 export default function ImageCard({ result }: ImageCardProps) {
   const retryGenerate = useGenerationStore((s) => s.retryGenerate);
+  const removeResult = useGenerationStore((s) => s.removeResult);
   const isGenerating = useGenerationStore((s) => s.isGenerating);
   const { setAsWallpaper, isSetting } = useWallpaper();
   const [saving, setSaving] = useState(false);
@@ -25,8 +45,10 @@ export default function ImageCard({ result }: ImageCardProps) {
   const [toast, setToast] = useState<string | null>(null);
   const [liked, setLiked] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [skipNext, setSkipNext] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  // 从日期推导当日的 style/scene/composition（与 promptEngine 确定性一致）
   const genDate = new Date(result.metadata.generatedAt);
   const dailyPrompt = buildDailyPrompt(genDate);
 
@@ -65,7 +87,58 @@ export default function ImageCard({ result }: ImageCardProps) {
     }
   };
 
-  const badgeClass = providerColors[result.provider] ?? 'bg-gray-700 text-gray-200';
+  const handleDislike = () => {
+    if (shouldSkipConfirm()) {
+      executeDelete();
+    } else {
+      setShowDeleteDialog(true);
+    }
+  };
+
+  const executeDelete = async () => {
+    setDeleting(true);
+    try {
+      // 取消喜欢（如果已喜欢）
+      if (liked && window.electronAPI?.unlikePrompt) {
+        await window.electronAPI.unlikePrompt({
+          imageUrl: result.url,
+          styleId: dailyPrompt.style.id,
+          sceneId: dailyPrompt.scene.id,
+          compositionId: dailyPrompt.composition.id,
+        });
+      }
+
+      // 删除本地壁纸文件
+      const dateStr = `${genDate.getFullYear()}-${String(genDate.getMonth() + 1).padStart(2, '0')}-${String(genDate.getDate()).padStart(2, '0')}`;
+      if (window.electronAPI?.deleteWallpaper) {
+        await window.electronAPI.deleteWallpaper({ dateStr }).catch(() => {});
+      }
+
+      // 从 persistenceStore 中移除
+      const all = persistenceStore.load();
+      const filtered = all.filter((r) => r.url !== result.url && r.metadata.generatedAt !== result.metadata.generatedAt);
+      persistenceStore.save(filtered);
+
+      // 从 generationStore 中移除（实时刷新 ImageGrid）
+      removeResult(result);
+
+      showToast('已删除');
+    } catch {
+      showToast('删除失败');
+    } finally {
+      setDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
+  const confirmDelete = () => {
+    if (skipNext) {
+      setSkipConfirm(true);
+    }
+    executeDelete();
+  };
+
+  const badgeClass = providerColors[result.provider] ?? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200';
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -78,7 +151,6 @@ export default function ImageCard({ result }: ImageCardProps) {
   };
 
   const handleSave = async () => {
-    // Electron 环境：使用原生保存对话框
     if (window.electronAPI?.saveImage) {
       setSaving(true);
       try {
@@ -97,7 +169,6 @@ export default function ImageCard({ result }: ImageCardProps) {
         setSaving(false);
       }
     } else {
-      // 非 Electron 环境：降级为复制 URL
       handleCopyUrl();
     }
   };
@@ -115,15 +186,15 @@ export default function ImageCard({ result }: ImageCardProps) {
   };
 
   return (
-    <div className="relative rounded-lg border border-gray-700 bg-gray-800 overflow-hidden hover:border-gray-600 transition-colors">
+    <div className="relative rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden hover:border-gray-300 dark:hover:border-gray-600 transition-colors">
       {/* Toast */}
       {toast && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded bg-gray-900/90 text-xs text-gray-200 shadow-lg">
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded bg-gray-100 dark:bg-gray-900/90 text-xs text-gray-700 dark:text-gray-200 shadow-lg">
           {toast}
         </div>
       )}
 
-      <div className="aspect-square bg-gray-900">
+      <div className="aspect-square bg-gray-100 dark:bg-gray-900">
         <img
           src={result.url}
           alt={result.metadata.prompt}
@@ -137,7 +208,7 @@ export default function ImageCard({ result }: ImageCardProps) {
       </div>
 
       <div className="p-3 flex flex-col gap-2">
-        <p className="text-xs text-gray-400 line-clamp-2" title={result.metadata.prompt}>
+        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2" title={result.metadata.prompt}>
           {result.metadata.prompt}
         </p>
 
@@ -145,39 +216,49 @@ export default function ImageCard({ result }: ImageCardProps) {
           <span className={`text-xs px-2 py-0.5 rounded-full ${badgeClass}`}>
             {result.provider}
           </span>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-gray-400 dark:text-gray-500">
             {new Date(result.metadata.generatedAt).toLocaleTimeString()}
           </span>
         </div>
 
-        {/* Like 按钮 */}
+        {/* Like / Dislike 按钮 */}
         {window.electronAPI && (
-          <button
-            onClick={handleLikeToggle}
-            disabled={likeLoading}
-            className={`text-xs py-0.5 px-2 rounded-full transition-colors ${
-              liked
-                ? 'bg-red-900/40 text-red-400 border border-red-700'
-                : 'bg-gray-700 text-gray-400 border border-transparent hover:border-gray-500'
-            }`}
-            title={liked ? '取消喜欢' : '喜欢这个结果'}
-          >
-            {liked ? '❤' : '♡'} {liked ? '已喜欢' : '喜欢'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleLikeToggle}
+              disabled={likeLoading}
+              className={`flex-1 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center gap-1 ${
+                liked
+                  ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-700'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border border-transparent hover:border-gray-300 dark:hover:border-gray-500'
+              }`}
+              title={liked ? '取消喜欢' : '喜欢'}
+            >
+              {liked ? '👍' : '👍'} {liked ? '已喜欢' : '喜欢'}
+            </button>
+            <button
+              onClick={handleDislike}
+              disabled={deleting}
+              className="flex-1 text-xs py-1 px-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border border-transparent hover:border-gray-300 dark:hover:border-gray-500 transition-colors flex items-center justify-center gap-1"
+              title="不喜欢，删除此图像"
+            >
+              👎 不喜欢
+            </button>
+          </div>
         )}
 
         <div className="flex gap-2">
           <button
             onClick={handleSave}
             disabled={saving || isGenerating}
-            className="flex-1 text-xs py-1.5 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 transition-colors"
+            className="flex-1 text-xs py-1.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors"
           >
             {saving ? '保存中...' : window.electronAPI?.saveImage ? '另存为' : '复制 URL'}
           </button>
           <button
             onClick={handleRetry}
             disabled={retrying || isGenerating}
-            className="flex-1 text-xs py-1.5 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-1"
+            className="flex-1 text-xs py-1.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-1"
           >
             {retrying && (
               <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
@@ -191,13 +272,52 @@ export default function ImageCard({ result }: ImageCardProps) {
             <button
               onClick={() => setAsWallpaper(result.url)}
               disabled={isSetting || isGenerating}
-              className="flex-1 text-xs py-1.5 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 transition-colors"
+              className="flex-1 text-xs py-1.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors"
             >
               {isSetting ? '设置中...' : '设为壁纸'}
             </button>
           )}
         </div>
       </div>
+
+      {/* 删除确认弹窗 */}
+      {showDeleteDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowDeleteDialog(false)}>
+          <div
+            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 w-96 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-2">确认删除</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">确定要删除这张图像吗？此操作不可撤销。</p>
+
+            <label className="flex items-center gap-2 mb-4 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={skipNext}
+                onChange={(e) => setSkipNext(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-blue-600 focus:ring-0"
+              />
+              <span className="text-xs text-gray-500 dark:text-gray-400">以后不再提示</span>
+            </label>
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowDeleteDialog(false)}
+                className="text-xs px-4 py-1.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="text-xs px-4 py-1.5 rounded bg-red-600 text-white hover:bg-red-500 disabled:opacity-50 transition-colors"
+              >
+                {deleting ? '删除中...' : '确认删除'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

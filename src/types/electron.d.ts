@@ -40,7 +40,8 @@ declare global {
       getSettings: () => Promise<{ status: string; data?: Record<string, unknown>; message?: string }>;
       updateSetting: (key: string, value: unknown) => Promise<{ status: string; data?: Record<string, unknown>; message?: string }>;
       onEvent: (channel: string, callback: (data: unknown) => void) => () => void;
-      setWallpaper?: (params: { imagePath: string }) => Promise<{ status: string; message?: string }>;
+      setWallpaper?: (params: { imagePath: string }) => Promise<{ status: string; data?: { archivedPath?: string }; message?: string }>;
+      deleteWallpaper?: (params: { dateStr: string }) => Promise<{ status: string; message?: string }>;
       likePrompt?: (params: { imageUrl: string; styleId: string; sceneId: string; compositionId: string }) => Promise<{ status: string; data?: Record<string, unknown>; message?: string }>;
       unlikePrompt?: (params: { imageUrl: string; styleId: string; sceneId: string; compositionId: string }) => Promise<{ status: string; data?: Record<string, unknown>; message?: string }>;
       getPreferenceWeights?: () => Promise<{ status: string; data?: Record<string, number>; message?: string }>;
@@ -50,6 +51,7 @@ declare global {
       getConfig?: () => Promise<{ status: string; data?: Record<string, unknown>; message?: string }>;
       updateConfig?: (params: { providerId: string; apiKey?: string; models?: Record<string, { description?: string; remaining: number; total: number }> }) => Promise<{ status: string; message?: string }>;
       testConnection?: (params: { providerId: string; apiKey: string }) => Promise<{ status: string; message?: string }>;
+      setProviderOrder?: (order: string[]) => Promise<{ status: string; message?: string }>;
       checkForUpdate?: () => Promise<{ status: string; message?: string }>;
       downloadUpdate?: () => Promise<{ status: string; message?: string }>;
       installUpdate?: () => Promise<unknown>;

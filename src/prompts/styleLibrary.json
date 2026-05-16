@@ -5,5 +5,13 @@
   { "id": "minimalist", "name": "极简主义", "prompt": "minimalist composition, clean lines, negative space, subtle color palette, modern aesthetic" },
   { "id": "watercolor", "name": "水彩", "prompt": "watercolor illustration, soft pastel colors, dreamy atmosphere, hand-painted style, textured paper" },
   { "id": "astro-photo", "name": "星空摄影", "prompt": "astrophotography, cosmic scene, deep space, colorful nebula, crisp stars, NASA quality" },
-  { "id": "vintage-film", "name": "复古胶片", "prompt": "vintage film photography, warm tones, analog grain, golden hour light, nostalgic mood, Kodak Portra" }
+  { "id": "vintage-film", "name": "复古胶片", "prompt": "vintage film photography, warm tones, analog grain, golden hour light, nostalgic mood, Kodak Portra" },
+  { "id": "anime", "name": "动漫风格", "prompt": "anime art style, vibrant colors, cel-shaded, Studio Ghibli inspired, emotional storytelling, hand-drawn feel" },
+  { "id": "pencil-sketch", "name": "素描手绘", "prompt": "detailed pencil sketch, graphite texture, fine cross-hatching, monochrome, artistic shading, academic drawing" },
+  { "id": "pop-art", "name": "波普艺术", "prompt": "pop art style, bold colors, comic book halftone dots, Warhol inspired, graphic contrast, playful and vibrant" },
+  { "id": "baroque", "name": "巴洛克油画", "prompt": "baroque painting, dramatic chiaroscuro lighting, rich dark tones, Caravaggio style, intense emotional depth" },
+  { "id": "ukiyoe", "name": "浮世绘", "prompt": "Japanese ukiyo-e woodblock print style, flat colors, bold outlines, Hokusai inspired, traditional Edo period aesthetic" },
+  { "id": "surrealism", "name": "超现实主义", "prompt": "surrealist dreamscape, melting landscapes, impossible geometry, Dali inspired, subconscious imagery, mind-bending" },
+  { "id": "pixel-art", "name": "像素艺术", "prompt": "pixel art, 16-bit retro game aesthetic, crisp square pixels, vibrant limited palette, nostalgic gaming feel" },
+  { "id": "stained-glass", "name": "彩绘玻璃", "prompt": "stained glass window, luminous translucent colors, dark lead lines, gothic cathedral, divine light streaming through" }
 ]

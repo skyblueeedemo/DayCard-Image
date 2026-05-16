@@ -14,6 +14,16 @@ function registerWallpaperIpc(): void {
       return { status: 'error', message };
     }
   });
+
+  ipcMain.handle('wallpaper:delete', async (_event, params: { dateStr: string }) => {
+    try {
+      await wallpaperService.deleteByDate(params.dateStr);
+      return { status: 'ok' };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '删除壁纸失败';
+      return { status: 'error', message };
+    }
+  });
 }
 
 export { registerWallpaperIpc };

@@ -57,16 +57,16 @@ export default function OnboardingWizard() {
   };
 
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-gray-950">
+    <div className="flex h-screen w-screen items-center justify-center bg-white dark:bg-gray-950">
       <div className="w-full max-w-md mx-4">
-        <div className="rounded-xl border border-gray-700 bg-gray-900 p-6 shadow-2xl">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 shadow-2xl">
           {/* Progress indicator */}
           <div className="flex justify-center gap-2 mb-6">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
                 className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                  i === step ? 'bg-blue-500' : i < step ? 'bg-blue-700' : 'bg-gray-700'
+                  i === step ? 'bg-blue-500' : i < step ? 'bg-blue-700' : 'bg-gray-300 dark:bg-gray-700'
                 }`}
               />
             ))}
@@ -90,10 +90,10 @@ export default function OnboardingWizard() {
           </div>
 
           {/* Navigation */}
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-800">
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-800">
             <button
               onClick={handleSkip}
-              className="text-xs text-gray-500 hover:text-gray-400 transition-colors"
+              className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
             >
               跳过引导
             </button>
@@ -102,7 +102,7 @@ export default function OnboardingWizard() {
               {step > 1 && (
                 <button
                   onClick={handlePrev}
-                  className="px-4 py-2 text-sm rounded bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+                  className="px-4 py-2 text-sm rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 >
                   上一步
                 </button>

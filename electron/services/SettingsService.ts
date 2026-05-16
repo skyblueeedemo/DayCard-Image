@@ -6,6 +6,7 @@ interface AppSettings {
   schedulerEnabled: boolean;
   schedulerTime: string;
   preferredProvider: string;
+  appearance: 'dark' | 'light';
 }
 
 const STORE_NAME = 'settings';
@@ -16,6 +17,7 @@ const defaults: AppSettings = {
   schedulerEnabled: false,
   schedulerTime: '08:00',
   preferredProvider: '',
+  appearance: 'dark',
 };
 
 class SettingsService {

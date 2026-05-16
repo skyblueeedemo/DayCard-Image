@@ -26,42 +26,34 @@ export default function HistoryPage() {
     return list;
   }, [results, filterProvider, sortNewest]);
 
-  // 每次切换到历史页面时刷新数据
   const refresh = () => {
     setResults(persistenceStore.load());
   };
 
+  const btnStyle = "text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 transition-colors";
+
   return (
     <div className="flex flex-col items-center py-8">
       <div className="w-full max-w-4xl flex items-center justify-between mb-6">
-        <h2 className="text-lg font-bold text-white">历史记录</h2>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white">历史记录</h2>
 
         <div className="flex items-center gap-3">
-          {/* Provider 筛选 */}
           <select
             value={filterProvider}
             onChange={(e) => setFilterProvider(e.target.value)}
-            className="text-sm rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-gray-300 focus:border-blue-500 focus:outline-none"
+            className="text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-gray-600 dark:text-gray-300 focus:border-blue-500 focus:outline-none"
           >
-            <option value="all">全部 Provider</option>
+            <option value="all">全部模型服务</option>
             {providers.map((id) => (
               <option key={id} value={id}>{id}</option>
             ))}
           </select>
 
-          {/* 排序 */}
-          <button
-            onClick={() => setSortNewest(!sortNewest)}
-            className="text-sm px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600 transition-colors"
-          >
+          <button onClick={() => setSortNewest(!sortNewest)} className={btnStyle}>
             {sortNewest ? '最新优先' : '最早优先'}
           </button>
 
-          {/* 刷新 */}
-          <button
-            onClick={refresh}
-            className="text-sm px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600 transition-colors"
-          >
+          <button onClick={refresh} className={btnStyle}>
             刷新
           </button>
         </div>

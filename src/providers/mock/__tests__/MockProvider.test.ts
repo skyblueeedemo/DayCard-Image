@@ -6,7 +6,7 @@ describe('MockProvider', () => {
 
   it('should have correct metadata', () => {
     expect(provider.id).toBe('mock');
-    expect(provider.name).toBe('Mock Provider (Dev Only)');
+    expect(provider.name).toBe('Mock 模型服务 (Dev Only)');
     expect(provider.priority).toBe(0);
   });
 

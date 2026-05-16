@@ -131,7 +131,8 @@ export class OpenAIProvider implements IImageProvider {
   }
 
   private checkDailyReset(): void {
-    const today = new Date().toISOString().slice(0, 10);
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     if (this.lastResetDate !== today) {
       this.dailyUsed = 0;
       this.lastResetDate = today;

@@ -13,10 +13,10 @@ export default function ToastContainer() {
           key={toast.id}
           className={`px-4 py-2 rounded-lg border text-sm shadow-lg pointer-events-auto transition-all ${
             toast.type === 'success'
-              ? 'border-green-700 bg-green-900/90 text-green-200'
+              ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/90 text-green-700 dark:text-green-200'
               : toast.type === 'error'
-                ? 'border-red-700 bg-red-900/90 text-red-200'
-                : 'border-blue-700 bg-blue-900/90 text-blue-200'
+                ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/90 text-red-700 dark:text-red-200'
+                : 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/90 text-blue-700 dark:text-blue-200'
           }`}
         >
           <div className="flex items-center gap-3">

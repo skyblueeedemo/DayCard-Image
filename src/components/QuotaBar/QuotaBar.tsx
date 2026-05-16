@@ -23,7 +23,7 @@ export default function QuotaBar() {
     }
     setLoading(true);
     try {
-      // 模型级配额走 IPC
+      // 优先从主进程 QuotaService 读取真实配额
       if (activeModelId && window.electronAPI?.getModelQuota) {
         const res = await window.electronAPI.getModelQuota({
           providerId: activeProviderId,
@@ -31,13 +31,19 @@ export default function QuotaBar() {
         });
         if (res.status === 'ok' && res.data) {
           setQuota(res.data);
-        } else {
-          setQuota(null);
+          return;
         }
-      } else {
-        const q = await providerManager.getQuota(activeProviderId);
-        setQuota(q);
       }
+      if (window.electronAPI?.getQuota) {
+        const res = await window.electronAPI.getQuota(activeProviderId);
+        if (res.status === 'ok' && res.data) {
+          setQuota(res.data);
+          return;
+        }
+      }
+      // Web 模式：降级到前端 Provider
+      const q = await providerManager.getQuota(activeProviderId);
+      setQuota(q);
     } catch {
       setQuota(null);
     } finally {
@@ -59,15 +65,15 @@ export default function QuotaBar() {
 
   return (
     <div className="w-full max-w-2xl flex items-center gap-3 text-xs">
-      <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+      <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-500 ${getBarColor(ratio)}`}
           style={{ width: `${Math.max(pct, 2)}%` }}
         />
       </div>
-      <span className={`whitespace-nowrap ${isExhausted ? 'text-red-400 font-medium' : 'text-gray-400'}`}>
+      <span className={`whitespace-nowrap ${isExhausted ? 'text-red-500 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
         {activeModelId && (
-          <span className="text-gray-500 mr-1">{activeModelId}</span>
+          <span className="text-gray-400 dark:text-gray-500 mr-1">{activeModelId}</span>
         )}
         {quota.used} / {quota.total === Infinity ? '∞' : quota.total}
         {isExhausted && (

@@ -4,5 +4,14 @@
   { "id": "enchanted-forest", "name": "奇幻森林", "prompt": "enchanted forest with glowing mushrooms, ancient twisted trees, fairy lights, magical atmosphere, ethereal mist" },
   { "id": "ocean-sunset", "name": "海上日落", "prompt": "ocean sunset with dramatic clouds, golden reflections on gentle waves, silhouetted sailboats, warm amber sky" },
   { "id": "cosmic-nebula", "name": "宇宙星云", "prompt": "colorful nebula in deep space, distant galaxies, bright stars, cosmic dust clouds, awe-inspiring scale" },
-  { "id": "snow-peak", "name": "雪域山峰", "prompt": "snow-capped mountain peak, crisp alpine air, jagged ridges, pristine white slopes against blue sky, winter majesty" }
+  { "id": "snow-peak", "name": "雪域山峰", "prompt": "snow-capped mountain peak, crisp alpine air, jagged ridges, pristine white slopes against blue sky, winter majesty" },
+  { "id": "cherry-blossom", "name": "樱花雨巷", "prompt": "cherry blossom trees lining a quiet stone path, pink petals falling in spring breeze, soft dappled sunlight, romantic Japanese garden" },
+  { "id": "desert-dunes", "name": "沙漠星河", "prompt": "endless sand dunes under a crystal-clear Milky Way, warm amber sand, cool indigo sky, solitude and vastness, nomadic tent in distance" },
+  { "id": "underwater", "name": "深海秘境", "prompt": "deep underwater scene, sun rays piercing through crystal water, coral reef, exotic fish, bioluminescent creatures, mysterious ocean depth" },
+  { "id": "autumn-maple", "name": "秋枫古道", "prompt": "ancient stone path through a maple forest in autumn, crimson and gold leaves, warm afternoon light, peaceful countryside, crisp air" },
+  { "id": "rainy-alley", "name": "雨巷咖啡馆", "prompt": "rainy evening in a narrow European alley, warm glow from a corner café window, wet cobblestone reflections, cozy and intimate atmosphere" },
+  { "id": "lavender-field", "name": "薰衣草海", "prompt": "endless lavender fields under a soft purple sky at dusk, rolling hills, lone farmhouse, bees and butterflies, Provence tranquility" },
+  { "id": "thunderstorm", "name": "雷暴荒原", "prompt": "dramatic thunderstorm over a vast grassland, lightning bolts splitting the sky, dark swirling clouds, raw power of nature, epic scale" },
+  { "id": "ice-cave", "name": "冰洞极光", "prompt": "inside a crystalline ice cave, northern lights dancing through translucent blue ice walls, ethereal glow, arctic wonder, frozen waterfall" },
+  { "id": "rooftop-dusk", "name": "天台黄昏", "prompt": "rooftop at dusk overlooking a sprawling city, string lights, warm breeze, golden to indigo gradient sky, urban solitude, intimate moment" }
 ]

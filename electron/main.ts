@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import path from 'path';
 import { imageIpc } from './ipc/imageGeneration';
 import { fileSystemIpc } from './ipc/fileSystem';
@@ -67,7 +67,7 @@ function registerIpcHandlers(): void {
       const providers = imageIpc.getProviders();
       return { status: 'ok', providers };
     } catch (err) {
-      const message = err instanceof Error ? err.message : '获取 Provider 列表失败';
+      const message = err instanceof Error ? err.message : '获取模型服务列表失败';
       return { status: 'error', message, providers: [] };
     }
   });
@@ -117,6 +117,7 @@ function registerIpcHandlers(): void {
 
 // ─── App Lifecycle ──────────────────────────────────────
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null);
   registerIpcHandlers();
   createWindow();
   trayManager.init(mainWindow!);

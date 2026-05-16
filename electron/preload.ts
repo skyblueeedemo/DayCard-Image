@@ -29,6 +29,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 壁纸设置
   setWallpaper: (params: { imagePath: string }) =>
     ipcRenderer.invoke('wallpaper:set', params),
+  deleteWallpaper: (params: { dateStr: string }) =>
+    ipcRenderer.invoke('wallpaper:delete', params),
 
   // 偏好反馈
   likePrompt: (params: { imageUrl: string; styleId: string; sceneId: string; compositionId: string }) =>
@@ -48,6 +50,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('config:set', params),
   testConnection: (params: { providerId: string; apiKey: string }) =>
     ipcRenderer.invoke('config:test', params),
+  setProviderOrder: (order: string[]) =>
+    ipcRenderer.invoke('config:set-order', order),
 
   // 自动更新
   checkForUpdate: () => ipcRenderer.invoke('update:check'),

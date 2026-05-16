@@ -6,6 +6,7 @@ interface AppSettings {
   schedulerEnabled: boolean;
   schedulerTime: string;
   preferredProvider: string;
+  appearance: 'dark' | 'light';
 }
 
 const defaults: AppSettings = {
@@ -14,6 +15,7 @@ const defaults: AppSettings = {
   schedulerEnabled: false,
   schedulerTime: '08:00',
   preferredProvider: '',
+  appearance: 'dark',
 };
 
 interface SettingsState extends AppSettings {
@@ -45,6 +47,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
           schedulerEnabled: (data.schedulerEnabled as boolean) ?? defaults.schedulerEnabled,
           schedulerTime: (data.schedulerTime as string) ?? defaults.schedulerTime,
           preferredProvider: (data.preferredProvider as string) ?? defaults.preferredProvider,
+          appearance: (data.appearance as 'dark' | 'light') ?? defaults.appearance,
           isHydrated: true,
         });
       } else {

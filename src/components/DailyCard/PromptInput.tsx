@@ -29,11 +29,11 @@ export default function PromptInput({ isOnline = true }: PromptInputProps) {
   return (
     <div className="w-full max-w-2xl flex flex-col gap-3">
       {error && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-red-900/40 border border-red-700 rounded-lg text-red-300 text-sm">
+        <div className="flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700 rounded-lg text-red-600 dark:text-red-300 text-sm">
           <span className="flex-1">{error}</span>
           <button
             onClick={clearError}
-            className="text-red-400 hover:text-red-200 text-lg leading-none"
+            className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-200 text-lg leading-none"
             aria-label="关闭错误提示"
           >
             &times;
@@ -50,11 +50,11 @@ export default function PromptInput({ isOnline = true }: PromptInputProps) {
           disabled={isGenerating || !isOnline}
           rows={3}
           maxLength={500}
-          className="w-full resize-none rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full resize-none rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         />
 
         <div className="absolute bottom-3 right-3 flex items-center gap-3">
-          <span className="text-xs text-gray-500">{prompt.length}/500</span>
+          <span className="text-xs text-gray-400 dark:text-gray-500">{prompt.length}/500</span>
           <button
             onClick={handleSubmit}
             disabled={!prompt.trim() || isGenerating || quotaExhausted || !isOnline}

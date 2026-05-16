@@ -930,3 +930,166 @@
 - ✅ `npm test` 30/30，`npm run type-check` 0 errors，`npm run lint` 0 errors
 - ⚠️ DashScope API 实际调用需在本地 `config/local.json` 中配置真实 API Key 后验证
 - **结论**：优化阶段 1 已交付
+
+---
+
+## 优化阶段 2：主题扩展 + 收藏 + 外观 + 删除 + 重构
+
+**阶段目标**：每日主题从 1 组扩展到 3 组并支持历史回溯、新增收藏独立展示区、全局 Provider→模型服务重命名、支持排序、暗夜/亮白双主题、壁纸删除功能、Mock 测试闭环、模型服务合并入 API 配置。
+
+**范围**：
+- 每日主题 3 组随机 + 持久化 + 主题回顾 Tab
+- 我的收藏独立展示区（FavoritesPage）
+- Provider → "模型服务" 全局重命名
+- 模型服务/API 配置 ↑↓ 排序（localStorage 持久化）
+- 版本号 → dev1.3.0
+- Electron 菜单栏隐藏
+- 暗夜/亮白双主题（Tailwind darkMode: 'class'）
+- 壁纸删除"不喜欢"（确认弹窗 + 本地文件清除）
+- Mock 全链路闭环（跳过 API Key 检查）
+- 模型服务合并入 API 配置（去优先级标签 + 加切换按钮）
+
+**验收条件**：
+- [x] 每日 3 个主题并排展示，点击任一填充 Prompt
+- [x] 每日主题历史可回溯查询（主题回顾 Tab）
+- [x] 左侧「我的收藏」Tab 展示所有 liked 图片
+- [x] 所有界面 "Provider" 文案替换为 "模型服务"
+- [x] 模型服务 + API 配置支持排序，重启保持
+- [x] 版本号显示 dev1.3.0
+- [x] 顶部菜单栏隐藏
+- [x] 暗夜/亮白模式切换即时生效，重启保持
+- [x] ImageCard 显示 👍/👎 对称按钮
+- [x] 点击 👎 弹出确认框（含"不再提示"），确认后删除记录+本地文件
+- [x] 无 config/local.json 时 Mock 可正常生成
+- [x] API 配置页显示 Mock（无需配置），切换按钮可用
+- [x] ProviderSelector 不显示 P 标签
+- [x] 侧边栏"模型服务"合并入"API 配置"
+- [x] `npm test` 30/30 全绿
+- [x] `npm run type-check` 0 errors
+
+---
+
+### 任务记录
+
+### T-701: 每日主题 1→3 组 + 历史留存 + 主题回顾
+
+- **状态**：✅ 已完成
+- **目标**：promptEngine 生成 3 组独立 Prompt，持久化每日主题，新增主题回顾 Tab
+- **涉及文件**：`promptEngine.ts`（新增 buildDailyPrompts）、`dailyTheme.ts`（3 主题 + localStorage 持久化）、`DailyTheme.tsx`（3 列并排）、`DailyThemeHistory.tsx`（新建）、`Sidebar.tsx`、`App.tsx`
+
+### T-702: 我的收藏独立展示区
+
+- **状态**：✅ 已完成
+- **目标**：侧边栏新增"我的收藏"Tab，展示所有 liked 图片
+- **涉及文件**：`FavoritesPage.tsx`（新建）、`Sidebar.tsx`、`App.tsx`
+
+### T-703: Provider → "模型服务" 全局重命名
+
+- **状态**：✅ 已完成
+- **目标**：所有用户可见 Provider 文案替换为"模型服务"
+- **涉及文件**：Sidebar、ProviderSelector、ProviderList、Onboarding Step2、HistoryPage、ApiConfigPage、MockProvider、electron/main.ts、electron/ipc/imageGeneration.ts、electron/ipc/config.ts
+
+### T-704: 排序功能（↑↓ 按钮 + localStorage）
+
+- **状态**：✅ 已完成
+- **目标**：模型服务管理页 + API 配置页支持 ↑↓ 排序，持久化到 localStorage
+- **涉及文件**：`providerOrder.ts`（新建）、`ProviderList.tsx`、`ApiConfigPage.tsx`、`ProviderSelector.tsx`（同步排序）
+
+### T-705: 版本号 + 菜单栏
+
+- **状态**：✅ 已完成
+- **目标**：全局版本 dev1.3.0，隐藏 Electron 菜单栏
+- **涉及文件**：`Sidebar.tsx`、`Settings.tsx`、`electron/main.ts`（Menu.setApplicationMenu(null)）
+
+### T-706: 暗夜/亮白双主题
+
+- **状态**：✅ 已完成
+- **目标**：Tailwind darkMode: 'class' + useAppearance hook，设置页切换
+- **涉及文件**：`tailwind.config.js`（ESM → CJS + darkMode）、`index.html`、`settingsStore.ts`、`SettingsService.ts`、`useAppearance.ts`（新建）、`App.tsx`、`Settings.tsx`、20 个组件 className 改造
+
+### T-707: 壁纸删除"不喜欢"
+
+- **状态**：✅ 已完成
+- **目标**：👍/👎 对称按钮 + 确认弹窗 + 清除记录/文件
+- **涉及文件**：`ImageCard.tsx`、`generationStore.ts`（removeResult）、`WallpaperService.ts`（deleteByDate）、`electron/ipc/wallpaper.ts`（wallpaper:delete）、`electron/preload.ts`、`electron.d.ts`
+
+### T-708: Mock 测试闭环 + 合并重构
+
+- **状态**：✅ 已完成
+- **目标**：Mock 无需 API Key 全链路可跑，模型服务合并入 API 配置，去优先级标签
+- **涉及文件**：`electron/ipc/imageGeneration.ts`（handleMock + 跳过 config 检查）、`ApiConfigPage.tsx`（加切换 + mock 项）、`ProviderSelector.tsx`（去 P 标签）、`Sidebar.tsx`（移除模型服务入口）、`App.tsx`（移除 providers 路由）
+
+### T-709: 启动页 SplashScreen
+
+- **状态**：✅ 已完成
+- **目标**：首次启动 3s 启动页（镜头光圈图标 + 中英文名 + 口号"每日一帧，拾起时光"），淡入淡出过渡
+- **涉及文件**：`SplashScreen.tsx`（新建 — SVG 镜头图标 + 渐变入场动画）、`App.tsx`（localStorage `daycard-splash-shown` 控制，dev/prod 通用）
+
+### T-710: 打包修复系列
+
+- **状态**：✅ 已完成
+- **目标**：版本 semver 化、清理依赖、NSIS 卸载、Mock 隐藏、config 路径修复、配额显示修复
+- **涉及文件**：`package.json`（版本 + 移除 electron-store + NSIS 配置 + 签名跳过）、`electron/ipc/config.ts`（getConfigPath 分包判断）、`electron/ipc/imageGeneration.ts`（loadConfig 分包判断）、`electron/services/QuotaService.ts`（getConfigPath 分包判断 + today 本地时间）、`ApiConfigPage.tsx`（Mock DEV 条件）、`Settings.tsx`（移除 config/local.json 提示）、`QuotaBar.tsx`（优先走 IPC 配额）、`build/installer.nsh`（新建 — 卸载清理脚本）
+
+### T-711: 检查更新降级
+
+- **状态**：✅ 已完成
+- **目标**：移除 electron-updater 复杂状态机，改为 info toast「暂不支持在线升级，请关注 GitHub Releases」
+- **涉及文件**：`Settings.tsx`（移除 6 个 state + 4 个 listener + 3 个 handler，精简 ~60 行）
+
+### T-712: 每日页欢迎横幅
+
+- **状态**：✅ 已完成
+- **目标**：每日抽卡页顶部常驻介绍区域
+- **涉及文件**：`WelcomeBanner.tsx`（新建）、`App.tsx`
+
+### T-713: 模型排序同步
+
+- **状态**：✅ 已完成
+- **目标**：API 配置页 + ProviderSelector 模型顺序同步，localStorage 持久化
+- **涉及文件**：`providerOrder.ts`（新增 modelOrder 工具函数）、`ApiConfigPage.tsx`（模型 ↑↓ 排序）、`ProviderSelector.tsx`（读取模型排序）
+
+### T-714: Slogan 更改
+
+- **状态**：✅ 已完成
+- **目标**：「跨平台 AI 图像生成桌面应用」→「日更壁纸 · 拾光成匣」全局替换
+- **涉及文件**：`package.json`、`Settings.tsx`、`README.md`、`DayCard-Image拾光匣开发文档.md`
+
+### T-715: UTC 时区修复
+
+- **状态**：✅ 已完成
+- **目标**：`toISOString()` UTC 时间导致每日主题 + 配额 + 壁纸删除在 UTC+8 时区滞后
+- **涉及文件**：`promptEngine.ts`、`dailyTheme.ts`、`QuotaService.ts`、`OpenAIProvider.ts`、`ImageCard.tsx`
+
+### T-716: 提示词扩充
+
+- **状态**：✅ 已完成
+- **目标**：风格 7→15、场景 6→15、构图 4→8，总组合 168→1,800
+- **涉及文件**：`styleLibrary.json`、`sceneLibrary.json`、`compositionLibrary.json`
+
+### T-717: 首次使用引导
+
+- **状态**：✅ 已完成
+- **目标**：首次进入每日抽卡页展示样例主题 +「开始今天的抽卡吧！」按钮，点击后生成真随机并永不出现
+- **涉及文件**：`DailyTheme.tsx`（首次/正常双模式，localStorage `daycard-theme-started` 标记）
+
+---
+
+**优化阶段 2 回顾**（2026-05-17）：
+- ✅ 17 个子任务全部完成，9 个新文件，41 个修改文件，951 行新增 / 436 行删除
+- ✅ 每日主题：3 组随机 + localStorage 持久化 + 主题回顾 Tab + 首次使用样例引导
+- ✅ 提示词库：15 风格 × 15 场景 × 8 构图 = 1,800 组合
+- ✅ 我的收藏 Tab + 欢迎横幅
+- ✅ 外观主题：20 组件双主题适配，useAppearance hook
+- ✅ 壁纸删除：👍/👎 对称 + 确认弹窗 + 本地文件清除
+- ✅ 排序：Provider + 模型双层排序，localStorage 持久化
+- ✅ 全局重命名 + Slogan + 版本号
+- ✅ 启动页 SplashScreen + 菜单栏隐藏 + 检查更新降级
+- ✅ 打包修复：semver 版本、electron-store 移除、NSIS 卸载清理、签名跳过
+- ✅ 生产修复：Mock 隐藏、config userData 路径、QuotaBar IPC 优先、UTC 本地时间
+- ✅ 模型服务合并入 API 配置
+- ✅ `npm test` 30/30，`npm run type-check` 0 errors，`npm run lint` 0 errors
+- ⚠️ 暗夜/亮白切换在 Web 模式需 localStorage 兜底
+- ⚠️ Tailwind config 在 CJS 项目必须用 `module.exports`
+- ⚠️ electron-updater 在线升级待后续接入
+- **结论**：优化阶段 2 已交付，项目进度 dev1.3.0

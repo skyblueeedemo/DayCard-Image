@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { ipcMain, app } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -15,9 +15,15 @@ interface ProviderConfig {
 
 interface AppConfig {
   providers: Record<string, ProviderConfig>;
+  providerOrder?: string[];
 }
 
 function getConfigPath(): string {
+  // 生产环境：存到 userData 目录，确保可读写
+  if (app.isPackaged) {
+    return path.join(app.getPath('userData'), 'config.json');
+  }
+  // 开发环境：从项目 config/ 目录读取
   return path.join(__dirname, '..', '..', 'config', 'local.json');
 }
 
@@ -46,7 +52,7 @@ function registerConfigIpc(): void {
         };
       }
 
-      return { status: 'ok', data: { providers: masked } };
+      return { status: 'ok', data: { providers: masked, providerOrder: config.providerOrder ?? [] } };
     } catch (err) {
       const message = err instanceof Error ? err.message : '读取配置失败';
       return { status: 'error', message };
@@ -127,9 +133,33 @@ function registerConfigIpc(): void {
         return { status: 'error', message: `API 返回 ${res.status}` };
       }
 
-      return { status: 'error', message: `不支持的 Provider: ${params.providerId}` };
+      return { status: 'error', message: `不支持的模型服务: ${params.providerId}` };
     } catch (err) {
       const message = err instanceof Error ? err.message : '测试连接失败';
+      return { status: 'error', message };
+    }
+  });
+
+  ipcMain.handle('config:set-order', async (_event, order: string[]) => {
+    try {
+      const configPath = getConfigPath();
+      let config: AppConfig = { providers: {} };
+
+      if (fs.existsSync(configPath)) {
+        config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      }
+
+      config.providerOrder = order;
+
+      const dir = path.dirname(configPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+
+      return { status: 'ok' };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '保存排序失败';
       return { status: 'error', message };
     }
   });

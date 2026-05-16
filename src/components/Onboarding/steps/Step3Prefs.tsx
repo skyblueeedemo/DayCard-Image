@@ -20,11 +20,11 @@ function ToggleSwitch({
 }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm text-gray-300">{label}</span>
+      <span className="text-sm text-gray-600 dark:text-gray-300">{label}</span>
       <button
         onClick={() => onChange(!enabled)}
         className={`relative w-10 h-5 rounded-full transition-colors ${
-          enabled ? 'bg-blue-600' : 'bg-gray-600'
+          enabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
         }`}
       >
         <span
@@ -43,11 +43,11 @@ export default function Step3Prefs({ data, onChange }: Step3PrefsProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="text-center mb-2">
-        <h2 className="text-lg font-bold text-white mb-2">最后一步：偏好设置</h2>
-        <p className="text-sm text-gray-400">可随时在设置页面更改这些选项</p>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">最后一步：偏好设置</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">可随时在设置页面更改这些选项</p>
       </div>
 
-      <div className="rounded-lg border border-gray-700 bg-gray-800 p-4">
+      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
         <ToggleSwitch
           label="开机自动启动拾光匣"
           enabled={data.autoLaunch}
@@ -59,12 +59,12 @@ export default function Step3Prefs({ data, onChange }: Step3PrefsProps) {
           onChange={(v) => onChange({ ...data, schedulerEnabled: v })}
         />
         {data.schedulerEnabled && (
-          <div className="flex items-center justify-between py-2 mt-1 border-t border-gray-700/50">
-            <span className="text-sm text-gray-300">触发时间</span>
+          <div className="flex items-center justify-between py-2 mt-1 border-t border-gray-200 dark:border-gray-700/50">
+            <span className="text-sm text-gray-600 dark:text-gray-300">触发时间</span>
             <select
               value={data.schedulerTime}
               onChange={(e) => onChange({ ...data, schedulerTime: e.target.value })}
-              className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200"
+              className="bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm text-gray-700 dark:text-gray-200"
             >
               {Array.from({ length: 24 }, (_, i) => {
                 const h = String(i).padStart(2, '0');
@@ -79,7 +79,7 @@ export default function Step3Prefs({ data, onChange }: Step3PrefsProps) {
         )}
       </div>
 
-      <p className="text-xs text-gray-500 text-center mt-2">
+      <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-2">
         点击「完成」即可进入拾光匣，开始每日抽卡
       </p>
     </div>

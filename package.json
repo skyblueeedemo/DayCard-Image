@@ -1,7 +1,7 @@
 {
   "name": "daycard-image",
-  "version": "1.2.0",
-  "description": "拾光匣 - 跨平台 AI 图像生成桌面应用",
+  "version": "1.3.0-dev",
+  "description": "拾光匣 - 日更壁纸 · 拾光成匣",
   "main": "dist-electron/main.js",
   "author": "DayCard-Image Team",
   "license": "MIT",
@@ -20,7 +20,6 @@
   },
   "dependencies": {
     "auto-launch": "^5.0.6",
-    "electron-store": "^10.1.0",
     "electron-updater": "^6.8.3",
     "node-cron": "^4.2.1",
     "openai": "^4.47.0",
@@ -60,8 +59,8 @@
     "productName": "拾光匣",
     "publish": {
       "provider": "github",
-      "owner": "skyblueeedemo",
-      "repo": "DayCard-Image"
+      "owner": "<your-github-username>",
+      "repo": "<your-repo-name>"
     },
     "directories": {
       "output": "release"
@@ -74,7 +73,13 @@
       "target": "dmg"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "signAndEditExecutable": false,
+      "signDlls": false
+    },
+    "nsis": {
+      "include": "build/installer.nsh",
+      "deleteAppDataOnUninstall": true
     },
     "linux": {
       "target": "AppImage"

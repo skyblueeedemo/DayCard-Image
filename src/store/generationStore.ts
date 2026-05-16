@@ -16,6 +16,7 @@ interface GenerationState {
   setActiveModel: (modelId: string | null) => void;
   generate: () => Promise<void>;
   retryGenerate: (prompt: string) => Promise<void>;
+  removeResult: (result: ImageResult) => void;
   clearError: () => void;
 }
 
@@ -114,6 +115,13 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
     } finally {
       set({ isGenerating: false });
     }
+  },
+
+  removeResult: (result) => {
+    const filtered = get().results.filter(
+      (r) => r.url !== result.url && r.metadata.generatedAt !== result.metadata.generatedAt,
+    );
+    set({ results: filtered });
   },
 
   clearError: () => set({ error: null }),

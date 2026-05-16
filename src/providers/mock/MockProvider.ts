@@ -2,7 +2,7 @@ import type { IImageProvider, ImageResult, GenerateOptions, QuotaInfo } from '..
 
 export class MockProvider implements IImageProvider {
   readonly id = 'mock';
-  readonly name = 'Mock Provider (Dev Only)';
+  readonly name = 'Mock 模型服务 (Dev Only)';
   readonly priority = 0;
 
   private mockImageUrl = 'https://placehold.co/1024x1024/a78bfa/ffffff?text=MOCK';

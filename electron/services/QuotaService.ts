@@ -1,3 +1,4 @@
+import { app } from 'electron';
 import { readStore, writeStore } from '../storage';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -37,6 +38,9 @@ const QUOTA_LIMITS: Record<string, number> = {
 const STORE_NAME = 'quota';
 
 function getConfigPath(): string {
+  if (app.isPackaged) {
+    return path.join(app.getPath('userData'), 'config.json');
+  }
   return path.join(__dirname, '..', '..', 'config', 'local.json');
 }
 
@@ -66,7 +70,11 @@ function saveModelRemaining(providerId: string, modelId: string, remaining: numb
 
 class QuotaService {
   private today(): string {
-    return new Date().toISOString().slice(0, 10);
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
   private resetTime(): string {

@@ -75,6 +75,20 @@ class WallpaperService {
     }
   }
 
+  async deleteByDate(dateStr: string): Promise<void> {
+    // dateStr 格式: "YYYY-MM-DD"，匹配该日期的所有壁纸文件
+    const prefix = dateStr; // e.g. "2026-05-16"
+    try {
+      const files = fs.readdirSync(this.archiveDir);
+      const targets = files.filter((f) => f.startsWith(prefix) && f.endsWith('.png'));
+      for (const f of targets) {
+        try { fs.unlinkSync(path.join(this.archiveDir, f)); } catch { /* skip */ }
+      }
+    } catch {
+      // 目录不存在则忽略
+    }
+  }
+
   private async applyWallpaper(imagePath: string): Promise<void> {
     const platform = process.platform;
 
