@@ -12,6 +12,7 @@ import ProviderList from '@/components/ProviderManager/ProviderList';
 import HistoryPage from '@/components/History/HistoryPage';
 import DailyTheme from '@/components/DailyCard/DailyTheme';
 import Settings from '@/components/Settings/Settings';
+import ApiConfigPage from '@/components/ApiConfig/ApiConfigPage';
 import ToastContainer from '@/components/Toast/ToastContainer';
 import OnboardingWizard from '@/components/Onboarding/OnboardingWizard';
 import OfflineBanner from '@/components/DailyCard/OfflineBanner';
@@ -22,15 +23,15 @@ function MainApp() {
   const addToast = useToastStore((s) => s.addToast);
 
   const [activePage, setActivePage] = useState<
-    'daily' | 'history' | 'providers' | 'settings'
+    'daily' | 'history' | 'providers' | 'api-config' | 'settings'
   >('daily');
 
   useEffect(() => {
     const unsubNav = window.electronAPI?.onEvent('navigate-to', (data) => {
       if (typeof data === 'object' && data && 'page' in data) {
         const page = (data as { page: string }).page;
-        if (['daily', 'history', 'providers', 'settings'].includes(page)) {
-          setActivePage(page as 'daily' | 'history' | 'providers' | 'settings');
+        if (['daily', 'history', 'providers', 'api-config', 'settings'].includes(page)) {
+          setActivePage(page as 'daily' | 'history' | 'providers' | 'api-config' | 'settings');
         }
       }
     });
@@ -68,6 +69,8 @@ function MainApp() {
             <ProviderList />
           </div>
         )}
+
+        {activePage === 'api-config' && <ApiConfigPage />}
 
         {activePage === 'settings' && <Settings />}
       </main>

@@ -233,87 +233,78 @@ async function handleZhipu(config: ProviderConfig, params: GenerateParams): Prom
 }
 
 async function handleAliyun(config: ProviderConfig, params: GenerateParams): Promise<Record<string, unknown>> {
-  const model = config.model ?? 'wanx2.0-t2i-turbo';
+  const model = (params.options?.model as string) ?? config.model ?? 'qwen-image-2.0-pro';
 
-  const submitBody = {
+  const body: Record<string, unknown> = {
     model,
-    input: { prompt: params.prompt },
+    input: {
+      messages: [{ role: 'user', content: [{ text: params.prompt }] }],
+    },
     parameters: {
-      size: (params.options?.size as string) ?? '1024*1024',
       n: (params.options?.n as number) ?? 1,
+      size: (params.options?.size as string) ?? '1920*1080',
+      watermark: true,
     },
   };
 
-  const submitRes = await fetch(
-    'https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis',
+  // 部分模型支持负向提示词
+  if (params.options?.negativePrompt) {
+    (body.parameters as Record<string, unknown>).negative_prompt = params.options.negativePrompt;
+  }
+
+  const res = await fetch(
+    'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${config.apiKey}`,
-        'X-DashScope-Async': 'enable',
       },
-      body: JSON.stringify(submitBody),
+      body: JSON.stringify(body),
     },
   );
 
-  if (!submitRes.ok) {
-    const errorText = await submitRes.text();
-    throw new Error(`[aliyun] 提交任务失败 ${submitRes.status}: ${errorText}`);
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`[aliyun] API 返回错误 ${res.status}: ${errorText}`);
   }
 
-  const submitData = (await submitRes.json()) as {
-    output?: { task_id?: string; task_status?: string };
+  const data = (await res.json()) as {
+    output?: {
+      choices?: {
+        message?: {
+          content?: Array<{ image?: string } | string>;
+        };
+      }[];
+    };
     message?: string;
   };
 
-  const taskId = submitData.output?.task_id;
-  if (!taskId) {
-    throw new Error(`[aliyun] 未获取到任务 ID: ${submitData.message ?? '未知错误'}`);
+  const contents = data.output?.choices?.[0]?.message?.content;
+  if (!contents || contents.length === 0) {
+    throw new Error(`[aliyun] 响应中无图像数据: ${data.message ?? '未知错误'}`);
   }
 
-  // 轮询任务结果
-  const maxAttempts = 30;
-  const interval = 2000;
+  const firstContent = contents[0];
+  const imageUrl = typeof firstContent === 'string' ? firstContent : firstContent?.image;
 
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise((r) => setTimeout(r, interval));
-
-    const res = await fetch(
-      `https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`,
-      { headers: { Authorization: `Bearer ${config.apiKey}` } },
-    );
-
-    if (!res.ok) continue;
-
-    const data = (await res.json()) as {
-      output?: { task_status?: string; results?: { url?: string }[] };
-    };
-
-    const status = data.output?.task_status;
-
-    if (status === 'SUCCEEDED') {
-      const imageUrl = data.output?.results?.[0]?.url;
-      if (!imageUrl) throw new Error('[aliyun] 任务完成但无图像 URL');
-      return {
-        url: imageUrl,
-        provider: 'aliyun',
-        cost: 1,
-        metadata: {
-          prompt: params.prompt,
-          generatedAt: new Date().toISOString(),
-          width: 1024,
-          height: 1024,
-        },
-      };
-    }
-
-    if (status === 'FAILED') {
-      throw new Error('[aliyun] 任务执行失败');
-    }
+  if (!imageUrl) {
+    throw new Error('[aliyun] 响应中无图像 URL');
   }
 
-  throw new Error(`[aliyun] 任务超时，未在 60s 内完成`);
+  return {
+    url: imageUrl,
+    provider: 'aliyun',
+    model,
+    cost: 1,
+    metadata: {
+      prompt: params.prompt,
+      generatedAt: new Date().toISOString(),
+      width: 1920,
+      height: 1080,
+      model,
+    },
+  };
 }
 
 const GENERATE_HANDLERS: Record<string, (config: ProviderConfig, params: GenerateParams) => Promise<Record<string, unknown>>> = {
@@ -336,7 +327,11 @@ async function handleGenerate(params: GenerateParams): Promise<Record<string, un
     throw new Error(`Provider "${providerId}" 未配置 API Key`);
   }
 
-  const check = quotaService.canGenerate(providerId);
+  const modelId = (params.options?.model as string) ?? undefined;
+
+  const check = modelId
+    ? quotaService.canGenerate(providerId, modelId)
+    : quotaService.canGenerate(providerId);
   if (!check.allowed) {
     throw new Error(check.reason ?? `[${providerId}] 额度已用尽`);
   }
@@ -354,7 +349,7 @@ async function handleGenerate(params: GenerateParams): Promise<Record<string, un
       const result = await handler(providerConfig, params);
       const validation = await validateImageResult(result);
       if (validation.valid) {
-        quotaService.incrementQuota(providerId);
+        quotaService.incrementQuota(providerId, modelId);
         return result;
       }
       console.warn(

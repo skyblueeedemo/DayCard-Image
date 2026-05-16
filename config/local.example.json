@@ -13,7 +13,49 @@
       "apiKey": "your-zhipu-api-key-here"
     },
     "aliyun": {
-      "apiKey": "your-aliyun-api-key-here"
+      "apiKey": "your-dashscope-api-key-here",
+      "models": {
+        "wan2.7-image-pro": {
+          "description": "文字渲染、品牌色、角色一致性多图生成、多图编辑",
+          "remaining": 50,
+          "total": 50
+        },
+        "wan2.7-image": {
+          "description": "生成速度更快，最高2K",
+          "remaining": 50,
+          "total": 50
+        },
+        "z-image-turbo": {
+          "description": "快速生成、低成本、写实人像",
+          "remaining": 100,
+          "total": 100
+        },
+        "qwen-image-2.0": {
+          "description": "",
+          "remaining": 100,
+          "total": 100
+        },
+        "qwen-image-2.0-2026-03-03": {
+          "description": "",
+          "remaining": 100,
+          "total": 100
+        },
+        "qwen-image-2.0-pro-2026-03-03": {
+          "description": "负向提示词、最多6张图片变体",
+          "remaining": 100,
+          "total": 100
+        },
+        "qwen-image-2.0-pro": {
+          "description": "负向提示词、最多6张图片变体",
+          "remaining": 97,
+          "total": 100
+        },
+        "qwen-image-2.0-pro-2026-04-22": {
+          "description": "负向提示词、最多6张图片变体",
+          "remaining": 100,
+          "total": 100
+        }
+      }
     }
   }
 }

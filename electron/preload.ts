@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getQuota: (providerId: string) => ipcRenderer.invoke('quota:get', providerId),
   getQuotaHistory: (providerId: string) => ipcRenderer.invoke('quota:history', providerId),
   getAllQuotas: () => ipcRenderer.invoke('quota:all'),
+  getModelQuota: (params: { providerId: string; modelId: string }) =>
+    ipcRenderer.invoke('quota:get-model', params),
 
   // 文件保存
   saveImage: (params: { imageUrl: string; defaultName?: string }) =>
@@ -35,6 +37,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('preference:unlike', params),
   getPreferenceWeights: () => ipcRenderer.invoke('preference:get-weights'),
   getLikedResults: () => ipcRenderer.invoke('preference:get-liked'),
+
+  // 结果持久化
+  loadResults: () => ipcRenderer.invoke('results:load'),
+  saveResults: (results: unknown[]) => ipcRenderer.invoke('results:save', results),
+
+  // API 配置
+  getConfig: () => ipcRenderer.invoke('config:get'),
+  updateConfig: (params: { providerId: string; apiKey?: string; models?: Record<string, { description?: string; remaining: number; total: number }> }) =>
+    ipcRenderer.invoke('config:set', params),
+  testConnection: (params: { providerId: string; apiKey: string }) =>
+    ipcRenderer.invoke('config:test', params),
 
   // 自动更新
   checkForUpdate: () => ipcRenderer.invoke('update:check'),

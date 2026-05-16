@@ -12,6 +12,7 @@ function getBarColor(ratio: number): string {
 
 export default function QuotaBar() {
   const activeProviderId = useGenerationStore((s) => s.activeProviderId);
+  const activeModelId = useGenerationStore((s) => s.activeModelId);
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -22,14 +23,27 @@ export default function QuotaBar() {
     }
     setLoading(true);
     try {
-      const q = await providerManager.getQuota(activeProviderId);
-      setQuota(q);
+      // 模型级配额走 IPC
+      if (activeModelId && window.electronAPI?.getModelQuota) {
+        const res = await window.electronAPI.getModelQuota({
+          providerId: activeProviderId,
+          modelId: activeModelId,
+        });
+        if (res.status === 'ok' && res.data) {
+          setQuota(res.data);
+        } else {
+          setQuota(null);
+        }
+      } else {
+        const q = await providerManager.getQuota(activeProviderId);
+        setQuota(q);
+      }
     } catch {
       setQuota(null);
     } finally {
       setLoading(false);
     }
-  }, [activeProviderId]);
+  }, [activeProviderId, activeModelId]);
 
   useEffect(() => {
     refresh();
@@ -52,6 +66,9 @@ export default function QuotaBar() {
         />
       </div>
       <span className={`whitespace-nowrap ${isExhausted ? 'text-red-400 font-medium' : 'text-gray-400'}`}>
+        {activeModelId && (
+          <span className="text-gray-500 mr-1">{activeModelId}</span>
+        )}
         {quota.used} / {quota.total === Infinity ? '∞' : quota.total}
         {isExhausted && (
           <span className="ml-1 text-red-500">已耗尽</span>

@@ -33,7 +33,7 @@ class NetworkService {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5_000);
-      await fetch('https://www.google.com/favicon.ico', {
+      await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
         method: 'HEAD',
         signal: controller.signal,
       });

@@ -8,6 +8,7 @@ release/
 
 # API Keys & local config (CRITICAL: never commit)
 config/local.json
+api-test.py
 
 # Environment
 .env

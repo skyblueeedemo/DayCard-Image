@@ -10,6 +10,44 @@
 
 ---
 
+## [1.2.1] - 2026-05-16
+
+> 优化阶段 1：API 配置 + DashScope 集成 + 壁纸修复 + 持久化修复 — 4 个新文件，23 个修改文件
+
+### Added
+
+- **API 配置页面**：侧边栏 🔑 入口，查看/编辑各 Provider API Key（脱敏显示），测试连接，一键导入默认模型
+- **DashScope 8 模型集成**：替换旧版 Aliyun 异步轮询 API 为 multimodal 同步 API（`services/aigc/multimodal-generation/generation`）
+- **模型级配额**：QuotaService 扩展模型级追踪，每模型独立 remaining，生成后自动回写 config
+- **ProviderSelector 二级选择**：选中 DashScope 时显示模型下拉（模型名 + 描述 + 剩余配额）
+- **配置 IPC**：`config:get`（脱敏）/ `config:set` / `config:test`（连接探活）
+- **双重结果持久化**：主进程文件备份（`userData/results.json`）+ localStorage；启动优先从主进程加载
+- **结果 IPC**：`results:load` / `results:save`
+
+### Changed
+
+- `generationStore`：新增 `activeModelId` + `setActiveModel`；生成路径统一（Electron → IPC，Web → ProviderManager）；异步加载结果
+- `persistenceStore`：新增 `loadAsync` 从主进程加载，`save` 双写（localStorage + IPC）
+- `ProviderList/ProviderSelector`：Electron 模式从 config 判断可用性（不用 HTTP 探活）
+- `bootstrap.ts`：所有环境注册真实 Provider（供 UI 展示，实际生图走 IPC）
+- `WallpaperService`：图片直接存归档目录（不再临时文件）；去掉 `failOn: 'none'`；文件校验 ≥ 1KB；PowerShell 脚本写入临时 `.ps1` 文件执行
+- `ImageValidator`：去掉 HEAD 预检，直接 GET 下载；尺寸阈值 256→128px；格式解析失败时宽松放行
+- `NetworkService`：探活 URL 从 Google → DashScope（国内可达）
+- `ImageCard`："保存" → "另存为"
+- `Sidebar`：版本号 v1.1.0 → v1.2.0
+
+### Fixed
+
+- **历史记录重启消失**：localStorage 单点故障 → 主进程 `results.json` 文件备份 + 启动优先加载
+- **壁纸设置黑屏/纯色**：PowerShell here-string 压缩+嵌套引号 → 写 `.ps1` 临时文件；路径双重转义 → 直接传原始路径；SPI flag 2→3
+- **Provider 全部不可用**：空 API Key 下 HTTP 探活失败 → Electron 模式检查 config hasKey
+- **API 配置页不显示/无模型**：`getConfig` 返回结构不一致 → 统一 `{providers: {...}}` 包装
+- **一直显示离线**：Google 探活被墙 → DashScope API 探活
+- **图片校验阻断生成**：HEAD 请求 CDN 不支持 → 直接 GET；sharp 格式异常 → 宽松放行
+- **开关溢出/状态不一致**：乐观更新 + 尺寸过小 → 等 IPC 返回 + 加大尺寸 + overflow-hidden
+
+---
+
 ## [1.2.0] - 2026-05-16
 
 > 阶段 5：质量强化 — 12 个新文件，12 个修改文件

@@ -1,14 +1,19 @@
 import { providerManager } from './ProviderManager';
 import { MockProvider } from './mock/MockProvider';
 import { OpenAIProvider } from './openai/OpenAIProvider';
+import { StabilityProvider } from './stability/StabilityProvider';
+import { ZhipuProvider } from './zhipu/ZhipuProvider';
+import { AliyunProvider } from './aliyun/AliyunProvider';
 
 export function bootstrapProviders(): void {
-  // 开发环境：注册 MockProvider 用于零费用开发测试
+  // 开发环境：注册 MockProvider + 真实 Provider 用于 UI 展示
   if (import.meta.env.DEV) {
     providerManager.register(new MockProvider());
-    return;
   }
 
-  // 生产环境：Provider 由 Electron 主进程通过 IPC 注入 API Key 后注册
-  // 此处仅做占位，实际注册在 electron/main.ts 的 IPC handler 中完成
+  // 所有环境：注册真实 Provider（Electron 下实际生成走 IPC，此处供 ProviderSelector 展示）
+  providerManager.register(new OpenAIProvider({ apiKey: '' }));
+  providerManager.register(new StabilityProvider({ apiKey: '' }));
+  providerManager.register(new ZhipuProvider({ apiKey: '' }));
+  providerManager.register(new AliyunProvider({ apiKey: '' }));
 }

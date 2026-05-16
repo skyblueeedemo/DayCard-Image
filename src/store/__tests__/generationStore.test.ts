@@ -10,6 +10,7 @@ const { mockGenerate, mockSwitchTo, mockGetCurrentProviderId } = vi.hoisted(() =
 vi.mock('../persistenceStore', () => ({
   persistenceStore: {
     load: vi.fn(() => []),
+    loadAsync: vi.fn(() => Promise.resolve([])),
     save: vi.fn(),
     addResult: vi.fn((result) => [result]),
     clearAll: vi.fn(),

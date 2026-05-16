@@ -172,7 +172,7 @@ export default function ImageCard({ result }: ImageCardProps) {
             disabled={saving || isGenerating}
             className="flex-1 text-xs py-1.5 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 transition-colors"
           >
-            {saving ? '保存中...' : window.electronAPI?.saveImage ? '保存' : '复制 URL'}
+            {saving ? '保存中...' : window.electronAPI?.saveImage ? '另存为' : '复制 URL'}
           </button>
           <button
             onClick={handleRetry}

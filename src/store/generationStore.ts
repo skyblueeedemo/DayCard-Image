@@ -9,9 +9,11 @@ interface GenerationState {
   results: ImageResult[];
   error: string | null;
   activeProviderId: string | null;
+  activeModelId: string | null;
 
   setPrompt: (prompt: string) => void;
   setActiveProvider: (providerId: string) => void;
+  setActiveModel: (modelId: string | null) => void;
   generate: () => Promise<void>;
   retryGenerate: (prompt: string) => Promise<void>;
   clearError: () => void;
@@ -20,29 +22,53 @@ interface GenerationState {
 export const useGenerationStore = create<GenerationState>((set, get) => ({
   prompt: '',
   isGenerating: false,
-  results: persistenceStore.load(),
+  results: [],
   error: null,
   activeProviderId: null,
+  activeModelId: null,
 
   setPrompt: (prompt) => set({ prompt }),
 
   setActiveProvider: (providerId) => {
     providerManager.switchTo(providerId);
-    set({ activeProviderId: providerId });
+    set({ activeProviderId: providerId, activeModelId: null });
   },
 
+  setActiveModel: (modelId) => set({ activeModelId: modelId }),
+
   generate: async () => {
-    const { prompt } = get();
+    const { prompt, activeProviderId, activeModelId } = get();
     if (!prompt.trim()) return;
 
     set({ isGenerating: true, error: null });
 
     try {
-      const result = await providerManager.generate(prompt);
+      let result: ImageResult;
+
+      // Electron 环境：通过 IPC → 主进程调用 API
+      if (typeof window !== 'undefined' && window.electronAPI?.generateImage) {
+        const options: Record<string, unknown> = {};
+        if (activeModelId) options.model = activeModelId;
+
+        const res = await window.electronAPI.generateImage({
+          prompt,
+          providerId: activeProviderId ?? undefined,
+          options,
+        });
+        const data = res as { status?: string; data?: ImageResult; message?: string };
+        if (data.status === 'error' || !data.data) {
+          throw new Error(data.message ?? '生成失败');
+        }
+        result = data.data;
+      } else {
+        // Web 模式：通过 ProviderManager
+        result = await providerManager.generate(prompt);
+      }
+
       const updated = persistenceStore.addResult(result);
       set({
         results: updated,
-        activeProviderId: providerManager.getCurrentProviderId(),
+        activeProviderId: result.provider,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : '生成失败，请重试';
@@ -53,14 +79,34 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
   },
 
   retryGenerate: async (prompt: string) => {
+    const { activeProviderId, activeModelId } = get();
     set({ isGenerating: true, error: null });
 
     try {
-      const result = await providerManager.generate(prompt);
+      let result: ImageResult;
+
+      if (typeof window !== 'undefined' && window.electronAPI?.generateImage) {
+        const options: Record<string, unknown> = {};
+        if (activeModelId) options.model = activeModelId;
+
+        const res = await window.electronAPI.generateImage({
+          prompt,
+          providerId: activeProviderId ?? undefined,
+          options,
+        });
+        const data = res as { status?: string; data?: ImageResult; message?: string };
+        if (data.status === 'error' || !data.data) {
+          throw new Error(data.message ?? '生成失败');
+        }
+        result = data.data;
+      } else {
+        result = await providerManager.generate(prompt);
+      }
+
       const updated = persistenceStore.addResult(result);
       set({
         results: updated,
-        activeProviderId: providerManager.getCurrentProviderId(),
+        activeProviderId: result.provider,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : '重新生成失败，请重试';
@@ -72,3 +118,10 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
 
   clearError: () => set({ error: null }),
 }));
+
+// 启动时异步加载结果（优先从主进程文件，fallback localStorage）
+persistenceStore.loadAsync().then((results) => {
+  if (results.length > 0) {
+    useGenerationStore.setState({ results });
+  }
+});

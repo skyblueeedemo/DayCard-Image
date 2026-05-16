@@ -6,11 +6,13 @@ import { registerSystemIpc } from './ipc/system';
 import { registerWallpaperIpc } from './ipc/wallpaper';
 import { registerQuotaIpc } from './ipc/quota';
 import { registerPreferenceIpc } from './ipc/preference';
+import { registerConfigIpc } from './ipc/config';
 
 import { trayManager } from './tray/TrayManager';
 import { schedulerService } from './services/SchedulerService';
 import { networkService } from './services/NetworkService';
 import { updateService } from './services/UpdateService';
+import { readStore, writeStore } from './storage';
 
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
@@ -76,6 +78,27 @@ function registerIpcHandlers(): void {
   registerWallpaperIpc();
   registerQuotaIpc();
   registerPreferenceIpc();
+  registerConfigIpc();
+
+  // 结果持久化
+  ipcMain.handle('results:load', async () => {
+    try {
+      const data = readStore<{ results: unknown[] }>('results', { results: [] });
+      return { status: 'ok', data: data.results };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '加载结果失败';
+      return { status: 'error', message };
+    }
+  });
+  ipcMain.handle('results:save', async (_event, results: unknown[]) => {
+    try {
+      writeStore('results', { results: results.slice(0, 500) });
+      return { status: 'ok' };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '保存结果失败';
+      return { status: 'error', message };
+    }
+  });
 
   // Auto-update handlers
   ipcMain.handle('update:check', async () => {

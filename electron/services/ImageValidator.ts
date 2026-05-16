@@ -5,8 +5,8 @@ interface ValidationResult {
   reason?: string;
 }
 
-const MIN_DIMENSION = 256;
-const MIN_SIZE_BYTES = 1024;
+const MIN_DIMENSION = 128;
+const MIN_SIZE_BYTES = 512;
 
 async function validateImageResult(result: Record<string, unknown>): Promise<ValidationResult> {
   const url = result.url as string | undefined;
@@ -33,6 +33,11 @@ async function validateImageResult(result: Record<string, unknown>): Promise<Val
         return { valid: false, reason: `图像尺寸过小 (${width}x${height})` };
       }
     } catch {
+      // sharp 无法解析格式，但文件大小合理 → 宽松放行
+      if (buffer.length > MIN_SIZE_BYTES) {
+        console.warn('[ImageValidator] 无法解析图像格式，但文件大小合理，放行');
+        return { valid: true };
+      }
       return { valid: false, reason: '无法解析图像格式' };
     }
 
@@ -44,7 +49,6 @@ async function validateImageResult(result: Record<string, unknown>): Promise<Val
 }
 
 async function fetchImageBuffer(url: string): Promise<Buffer | null> {
-  // data: URL — 直接解码
   if (url.startsWith('data:')) {
     const base64Match = url.match(/^data:image\/[^;]+;base64,(.+)$/);
     if (base64Match) {
@@ -53,22 +57,12 @@ async function fetchImageBuffer(url: string): Promise<Buffer | null> {
     return null;
   }
 
-  // 远程 URL — HEAD 检查可达性后下载
+  // 直接 GET 下载，不先 HEAD（很多 CDN 不支持 HEAD）
   try {
-    const headRes = await fetch(url, { method: 'HEAD' });
-    if (!headRes.ok) {
-      return null;
-    }
-    const contentType = headRes.headers.get('content-type') ?? '';
-    if (!contentType.startsWith('image/')) {
-      return null;
-    }
-  } catch {
-    return null;
-  }
-
-  try {
-    const res = await fetch(url);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
     if (!res.ok) return null;
     const arrayBuffer = await res.arrayBuffer();
     return Buffer.from(arrayBuffer);

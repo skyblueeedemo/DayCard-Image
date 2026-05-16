@@ -853,3 +853,80 @@
 - ⚠️ 配额存储使用 JSON 文件而非 SQLite（避免 better-sqlite3 原生模块重建问题，数据量极小不影响性能）
 - ⚠️ electron-updater 实际更新流程需配置 GitHub Token + Release 后验证
 - **结论**：阶段 5 质量强化已交付，应用达到生产就绪状态 v1.2.0
+
+---
+
+## 优化阶段 1：API 配置 + 开关修复 + DashScope 多模型
+
+**阶段目标**：修复系统设置开关异常、新增应用内 API Key 管理页面、将阿里云 Provider 从旧版异步轮询升级为 DashScope 多模态 8 模型同步 API。
+
+**范围**：
+- 修复 settingsStore 乐观更新/hydrate 不完整问题
+- 侧边栏新增 API 配置入口 + 完整配置页面
+- DashScope 8 模型集成（替换旧 handleAliyun）
+- 模型级配额追踪
+- generationStore 生成路径统一：Electron → IPC，Web → ProviderManager
+
+**验收条件**：
+- [x] 设置开关等待 IPC 返回后才切换，失败时 toast 提示
+- [x] hydrate 每个字段独立 fallback 默认值
+- [x] 侧边栏显示 "API 配置" 入口 + 版本号 v1.2.0
+- [x] API 配置页可查看/编辑 Provider Key + 测试连接 + 管理模型
+- [x] DashScope 8 模型可选，模型级配额独立追踪
+- [x] QuotaBar 显示当前模型配额
+- [x] `npm test` 30/30 全绿
+- [x] `npm run type-check` + `npm run lint` 0 errors
+
+### 任务记录
+
+### T-601: 系统偏好开关异常修复
+
+- **状态**：✅ 已完成
+- **目标**：修复 settingsStore 乐观更新、hydrate 不完整、更新后不同步三个问题
+- **涉及文件**：
+  - `src/store/settingsStore.ts`（修改 — hydrate 独立 fallback、updateSetting 等 IPC 返回、新增 refresh）
+  - `src/components/Settings/Settings.tsx`（修改 — isUpdating 禁用 + 失败 toast）
+- **预期结果**：开关状态与实际一致，重启保持，失败有反馈
+
+### T-602: API 手动添加
+
+- **状态**：✅ 已完成
+- **目标**：新增应用内 API Key 管理页面
+- **涉及文件**：
+  - `electron/ipc/config.ts`（新建 — config:get/set/test IPC）
+  - `src/components/ApiConfig/ApiConfigPage.tsx`（新建 — Provider 列表 + Key 编辑 + 模型管理）
+  - `src/components/Sidebar.tsx`（修改 — 新增 API 配置入口 + 版本修正）
+  - `src/App.tsx`（修改 — api-config 路由）
+  - `electron/main.ts`（修改 — 注册 config IPC）
+  - `electron/preload.ts`（修改 — 暴露 config API）
+  - `src/types/electron.d.ts`（修改 — config 类型）
+
+### T-603: DashScope 多模型集成
+
+- **状态**：✅ 已完成
+- **目标**：替换 Aliyun 异步轮询为 DashScope 8 模型同步 API
+- **涉及文件**：
+  - `electron/ipc/imageGeneration.ts`（修改 — 重写 handleAliyun 为 multimodal API）
+  - `electron/services/QuotaService.ts`（修改 — 新增模型级配额 getModelQuota/canGenerate/incrementQuota）
+  - `electron/ipc/quota.ts`（修改 — 新增 quota:get-model IPC）
+  - `src/store/generationStore.ts`（修改 — 新增 activeModelId、生成路由 Electron IPC vs ProviderManager）
+  - `src/components/ProviderSelector/ProviderSelector.tsx`（修改 — DashScope 时显示模型二级选择）
+  - `src/components/QuotaBar/QuotaBar.tsx`（修改 — 模型级配额显示）
+  - `config/local.example.json`（修改 — aliyun models 配置示例）
+
+### T-604: 优化阶段 1 收尾
+
+- **状态**：✅ 已完成
+- **目标**：全量验证，更新文档
+
+---
+
+**优化阶段 1 回顾**（2026-05-16）：
+- ✅ 3 个子任务全部完成，2 个新文件，10 个修改文件
+- ✅ 开关修复：settingStore 去乐观更新，hydrate 独立 fallback，isUpdating 状态，失败 toast
+- ✅ API 配置：侧边栏新入口，完整配置页（Key 编辑/测试/脱敏/模型导入），config IPC
+- ✅ DashScope：8 模型同步 API，模型级配额追踪，ProviderSelector 二级选择，QuotaBar 显示模型名
+- ✅ 生成路径统一：Electron 环境走 IPC → 主进程，Web 模式走 ProviderManager
+- ✅ `npm test` 30/30，`npm run type-check` 0 errors，`npm run lint` 0 errors
+- ⚠️ DashScope API 实际调用需在本地 `config/local.json` 中配置真实 API Key 后验证
+- **结论**：优化阶段 1 已交付

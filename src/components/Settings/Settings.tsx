@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useToastStore } from '../../store/toastStore';
 
 function ToggleSwitch({
   enabled,
@@ -18,13 +19,13 @@ function ToggleSwitch({
       <button
         onClick={() => onChange(!enabled)}
         disabled={disabled}
-        className={`relative w-10 h-5 rounded-full transition-colors ${
+        className={`relative w-11 h-6 rounded-full transition-colors overflow-hidden ${
           enabled ? 'bg-blue-600' : 'bg-gray-600'
         } disabled:opacity-50`}
       >
         <span
-          className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-            enabled ? 'translate-x-5' : 'translate-x-0.5'
+          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+            enabled ? 'translate-x-4' : 'translate-x-0'
           }`}
         />
       </button>
@@ -37,8 +38,10 @@ export default function Settings() {
     autoLaunch,
     schedulerEnabled,
     schedulerTime,
+    isUpdating,
     updateSetting,
   } = useSettingsStore();
+  const addToast = useToastStore((s) => s.addToast);
 
   const [updateStatus, setUpdateStatus] = useState<
     'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'error'
@@ -111,13 +114,21 @@ export default function Settings() {
           <ToggleSwitch
             label="开机自启动"
             enabled={autoLaunch}
-            onChange={(v) => updateSetting('autoLaunch', v)}
+            disabled={isUpdating}
+            onChange={async (v) => {
+              const ok = await updateSetting('autoLaunch', v);
+              if (!ok) addToast('设置失败，请重试', 'error');
+            }}
           />
 
           <ToggleSwitch
             label="每日自动生图"
             enabled={schedulerEnabled}
-            onChange={(v) => updateSetting('schedulerEnabled', v)}
+            disabled={isUpdating}
+            onChange={async (v) => {
+              const ok = await updateSetting('schedulerEnabled', v);
+              if (!ok) addToast('设置失败，请重试', 'error');
+            }}
           />
 
           {schedulerEnabled && (

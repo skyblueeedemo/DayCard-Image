@@ -1,12 +1,13 @@
 interface SidebarProps {
   activePage: string;
-  onNavigate: (page: 'daily' | 'history' | 'providers' | 'settings') => void;
+  onNavigate: (page: 'daily' | 'history' | 'providers' | 'api-config' | 'settings') => void;
 }
 
-const navItems: { id: 'daily' | 'history' | 'providers' | 'settings'; label: string; icon: string }[] = [
+const navItems: { id: 'daily' | 'history' | 'providers' | 'api-config' | 'settings'; label: string; icon: string }[] = [
   { id: 'daily', label: '今日抽卡', icon: '🎴' },
   { id: 'history', label: '历史记录', icon: '📁' },
   { id: 'providers', label: 'Provider 管理', icon: '⚙' },
+  { id: 'api-config', label: 'API 配置', icon: '🔑' },
   { id: 'settings', label: '设置', icon: '🔧' },
 ];
 
@@ -39,7 +40,7 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
 
       {/* Footer */}
       <div className="px-5 py-3 border-t border-gray-800 text-xs text-gray-500">
-        拾光匣 v1.1.0
+        拾光匣 v1.2.0
       </div>
     </aside>
   );

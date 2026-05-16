@@ -23,7 +23,12 @@ declare global {
       }>;
       getAllQuotas: () => Promise<{
         status: string;
-        data?: Array<{ used: number; total: number; unit: 'count' | 'credit'; resetAt?: string }>;
+        data?: Record<string, { used: number; total: number; unit: 'count' | 'credit'; resetAt?: string }>;
+        message?: string;
+      }>;
+      getModelQuota?: (params: { providerId: string; modelId: string }) => Promise<{
+        status: string;
+        data?: { used: number; total: number; unit: 'count' | 'credit'; resetAt?: string };
         message?: string;
       }>;
 
@@ -40,6 +45,11 @@ declare global {
       unlikePrompt?: (params: { imageUrl: string; styleId: string; sceneId: string; compositionId: string }) => Promise<{ status: string; data?: Record<string, unknown>; message?: string }>;
       getPreferenceWeights?: () => Promise<{ status: string; data?: Record<string, number>; message?: string }>;
       getLikedResults?: () => Promise<{ status: string; data?: string[]; message?: string }>;
+      loadResults?: () => Promise<{ status: string; data?: unknown[]; message?: string }>;
+      saveResults?: (results: unknown[]) => Promise<{ status: string; message?: string }>;
+      getConfig?: () => Promise<{ status: string; data?: Record<string, unknown>; message?: string }>;
+      updateConfig?: (params: { providerId: string; apiKey?: string; models?: Record<string, { description?: string; remaining: number; total: number }> }) => Promise<{ status: string; message?: string }>;
+      testConnection?: (params: { providerId: string; apiKey: string }) => Promise<{ status: string; message?: string }>;
       checkForUpdate?: () => Promise<{ status: string; message?: string }>;
       downloadUpdate?: () => Promise<{ status: string; message?: string }>;
       installUpdate?: () => Promise<unknown>;

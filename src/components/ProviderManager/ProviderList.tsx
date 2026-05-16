@@ -14,17 +14,44 @@ export default function ProviderList() {
     const list = providerManager.listProviders();
     setProviders(list);
 
-    const allQuotas = await providerManager.getAllQuotas();
     const q: Record<string, QuotaInfo> = {};
-    allQuotas.forEach((v, k) => { q[k] = v; });
+    if (window.electronAPI?.getAllQuotas) {
+      const res = await window.electronAPI.getAllQuotas();
+      if (res.status === 'ok' && res.data) {
+        const data = res.data as Record<string, QuotaInfo>;
+        for (const [k, v] of Object.entries(data)) {
+          q[k] = v;
+        }
+      }
+    } else {
+      const allQuotas = await providerManager.getAllQuotas();
+      allQuotas.forEach((v, k) => { q[k] = v; });
+    }
     setQuotas(q);
 
+    // Electron 模式：从 config 判断可用性
     const av: Record<string, boolean> = {};
-    await Promise.all(
-      list.map(async (p) => {
-        try { av[p.id] = await p.isAvailable(); } catch { av[p.id] = false; }
-      }),
-    );
+    if (window.electronAPI?.getConfig) {
+      try {
+        const res = await window.electronAPI.getConfig();
+        if (res.status === 'ok' && res.data) {
+          const data = res.data as Record<string, unknown>;
+          const providerData = (data.providers ?? data) as Record<string, { hasKey?: boolean }>;
+          list.forEach((p) => {
+            av[p.id] = providerData[p.id]?.hasKey ?? false;
+          });
+        }
+      } catch {
+        // fallback to HTTP
+      }
+    }
+    if (Object.keys(av).length === 0) {
+      await Promise.all(
+        list.map(async (p) => {
+          try { av[p.id] = await p.isAvailable(); } catch { av[p.id] = false; }
+        }),
+      );
+    }
     setAvailability(av);
   }, []);
 
