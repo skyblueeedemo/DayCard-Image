@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useSettingsStore } from '@/store/settingsStore';
+import { useToastStore } from '@/store/toastStore';
 import Sidebar from '@/components/Sidebar';
 import ImageGrid from '@/components/ImageGrid/ImageGrid';
 import PromptInput from '@/components/DailyCard/PromptInput';
@@ -8,13 +10,37 @@ import QuotaBar from '@/components/QuotaBar/QuotaBar';
 import ProviderList from '@/components/ProviderManager/ProviderList';
 import HistoryPage from '@/components/History/HistoryPage';
 import DailyTheme from '@/components/DailyCard/DailyTheme';
+import Settings from '@/components/Settings/Settings';
+import ToastContainer from '@/components/Toast/ToastContainer';
+import OnboardingWizard from '@/components/Onboarding/OnboardingWizard';
 
-export default function App() {
+function MainApp() {
   useKeyboardShortcuts();
+  const addToast = useToastStore((s) => s.addToast);
 
   const [activePage, setActivePage] = useState<
     'daily' | 'history' | 'providers' | 'settings'
   >('daily');
+
+  useEffect(() => {
+    const unsubNav = window.electronAPI?.onEvent('navigate-to', (data) => {
+      if (typeof data === 'object' && data && 'page' in data) {
+        const page = (data as { page: string }).page;
+        if (['daily', 'history', 'providers', 'settings'].includes(page)) {
+          setActivePage(page as 'daily' | 'history' | 'providers' | 'settings');
+        }
+      }
+    });
+
+    const unsubScheduler = window.electronAPI?.onEvent('scheduler:completed', () => {
+      addToast('每日自动生图已完成！', 'success');
+    });
+
+    return () => {
+      unsubNav?.();
+      unsubScheduler?.();
+    };
+  }, [addToast]);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden">
@@ -39,43 +65,31 @@ export default function App() {
           </div>
         )}
 
-        {activePage === 'settings' && (
-          <div className="flex flex-col items-center py-8">
-            <div className="w-full max-w-2xl">
-              <h2 className="text-lg font-bold text-white mb-4">设置</h2>
-
-              <div className="rounded-lg border border-gray-700 bg-gray-800 p-6 mb-4">
-                <h3 className="text-sm font-medium text-gray-200 mb-3">API Key 配置</h3>
-                <p className="text-sm text-gray-400">
-                  API Key 通过 <code className="text-xs bg-gray-700 px-1.5 py-0.5 rounded">config/local.json</code> 管理。
-                  复制 <code className="text-xs bg-gray-700 px-1.5 py-0.5 rounded">config/local.example.json</code> 并填入你的 Key。
-                </p>
-                <div className="mt-3 p-3 rounded bg-gray-900 text-xs text-gray-400 font-mono">
-                  {`{
-  "providers": {
-    "openai": { "apiKey": "sk-..." },
-    "stability": { "apiKey": "sk-..." },
-    "zhipu": { "apiKey": "..." },
-    "aliyun": { "apiKey": "..." }
-  }
-}`}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-gray-700 bg-gray-800 p-6">
-                <h3 className="text-sm font-medium text-gray-200 mb-3">关于</h3>
-                <div className="text-sm text-gray-400 flex flex-col gap-1">
-                  <p>拾光匣 DayCard-Image v0.2.0</p>
-                  <p>跨平台 AI 图像生成桌面应用</p>
-                  <p className="text-xs text-gray-600 mt-2">
-                    Electron + React + TypeScript + TailwindCSS
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {activePage === 'settings' && <Settings />}
       </main>
+      <ToastContainer />
     </div>
   );
+}
+
+export default function App() {
+  const { firstLaunch, isHydrated, hydrate } = useSettingsStore();
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
+  if (!isHydrated) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-gray-950">
+        <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (firstLaunch) {
+    return <OnboardingWizard />;
+  }
+
+  return <MainApp />;
 }

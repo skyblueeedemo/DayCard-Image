@@ -21,4 +21,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 文件保存
   saveImage: (params: { imageUrl: string; defaultName?: string }) =>
     ipcRenderer.invoke('file:save-image', params),
+
+  // 壁纸设置
+  setWallpaper: (params: { imagePath: string }) =>
+    ipcRenderer.invoke('wallpaper:set', params),
+
+  // 系统设置
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  updateSetting: (key: string, value: unknown) =>
+    ipcRenderer.invoke('settings:set', { key, value }),
+
+  // 主进程事件订阅（白名单通道）
+  onEvent: (channel: string, callback: (data: unknown) => void) => {
+    const allowed = ['navigate-to', 'scheduler:completed'];
+    if (!allowed.includes(channel)) return () => {};
+    const handler = (_event: Electron.IpcRendererEvent, data: unknown) => callback(data);
+    ipcRenderer.on(channel, handler);
+    return () => { ipcRenderer.removeListener(channel, handler); };
+  },
 });

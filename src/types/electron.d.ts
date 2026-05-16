@@ -2,7 +2,7 @@ export {};
 
 declare global {
   interface Window {
-    electronAPI: {
+    electronAPI?: {
       generateImage: (params: {
         prompt: string;
         providerId?: string;
@@ -21,6 +21,11 @@ declare global {
         imageUrl: string;
         defaultName?: string;
       }) => Promise<{ status: string; filePath?: string; message?: string }>;
+
+      getSettings: () => Promise<{ status: string; data?: Record<string, unknown>; message?: string }>;
+      updateSetting: (key: string, value: unknown) => Promise<{ status: string; data?: Record<string, unknown>; message?: string }>;
+      onEvent: (channel: string, callback: (data: unknown) => void) => () => void;
+      setWallpaper?: (params: { imagePath: string }) => Promise<{ status: string; message?: string }>;
     };
   }
 }

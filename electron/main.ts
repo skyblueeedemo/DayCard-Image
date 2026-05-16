@@ -2,8 +2,14 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import { imageIpc } from './ipc/imageGeneration';
 import { fileSystemIpc } from './ipc/fileSystem';
+import { registerSystemIpc } from './ipc/system';
+import { registerWallpaperIpc } from './ipc/wallpaper';
+
+import { trayManager } from './tray/TrayManager';
+import { schedulerService } from './services/SchedulerService';
 
 let mainWindow: BrowserWindow | null = null;
+let isQuitting = false;
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -25,6 +31,13 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
+
+  mainWindow.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault();
+      mainWindow?.hide();
+    }
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -64,22 +77,35 @@ function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('file:save-image', fileSystemIpc.handleSaveImage);
+
+  registerSystemIpc();
+  registerWallpaperIpc();
 }
 
 // ─── App Lifecycle ──────────────────────────────────────
 app.whenReady().then(() => {
   registerIpcHandlers();
   createWindow();
+  trayManager.init(mainWindow!);
+  schedulerService.setWindow(mainWindow!);
+  schedulerService.initialize();
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
+    if (mainWindow) {
+      mainWindow.show();
+    } else {
       createWindow();
+      trayManager.init(mainWindow!);
+      schedulerService.setWindow(mainWindow!);
+      schedulerService.initialize();
     }
   });
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  // 不退出 — 应用常驻托盘
+});
+
+app.on('before-quit', () => {
+  isQuitting = true;
 });

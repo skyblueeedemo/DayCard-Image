@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ImageResult } from '@/providers/IImageProvider';
 import { useGenerationStore } from '@/store/generationStore';
+import { useWallpaper } from '@/hooks/useWallpaper';
 
 interface ImageCardProps {
   result: ImageResult;
@@ -17,6 +18,7 @@ const providerColors: Record<string, string> = {
 export default function ImageCard({ result }: ImageCardProps) {
   const retryGenerate = useGenerationStore((s) => s.retryGenerate);
   const isGenerating = useGenerationStore((s) => s.isGenerating);
+  const { setAsWallpaper, isSetting } = useWallpaper();
   const [saving, setSaving] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -127,6 +129,15 @@ export default function ImageCard({ result }: ImageCardProps) {
             )}
             {retrying ? '...' : '重新生成'}
           </button>
+          {window.electronAPI && (
+            <button
+              onClick={() => setAsWallpaper(result.url)}
+              disabled={isSetting || isGenerating}
+              className="flex-1 text-xs py-1.5 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 transition-colors"
+            >
+              {isSetting ? '设置中...' : '设为壁纸'}
+            </button>
+          )}
         </div>
       </div>
     </div>
