@@ -1,0 +1,8 @@
+[
+  { "id": "city-night", "name": "城市夜景", "prompt": "city skyline at night, glowing windows, urban landscape, light trails from traffic, metropolitan atmosphere" },
+  { "id": "mountain-lake", "name": "山川湖海", "prompt": "mountains reflected in a calm lake, golden hour light, pristine wilderness, dramatic clouds, nature's grandeur" },
+  { "id": "enchanted-forest", "name": "奇幻森林", "prompt": "enchanted forest with glowing mushrooms, ancient twisted trees, fairy lights, magical atmosphere, ethereal mist" },
+  { "id": "ocean-sunset", "name": "海上日落", "prompt": "ocean sunset with dramatic clouds, golden reflections on gentle waves, silhouetted sailboats, warm amber sky" },
+  { "id": "cosmic-nebula", "name": "宇宙星云", "prompt": "colorful nebula in deep space, distant galaxies, bright stars, cosmic dust clouds, awe-inspiring scale" },
+  { "id": "snow-peak", "name": "雪域山峰", "prompt": "snow-capped mountain peak, crisp alpine air, jagged ridges, pristine white slopes against blue sky, winter majesty" }
+]

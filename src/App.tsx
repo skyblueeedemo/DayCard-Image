@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useToastStore } from '@/store/toastStore';
 import Sidebar from '@/components/Sidebar';
@@ -13,9 +14,11 @@ import DailyTheme from '@/components/DailyCard/DailyTheme';
 import Settings from '@/components/Settings/Settings';
 import ToastContainer from '@/components/Toast/ToastContainer';
 import OnboardingWizard from '@/components/Onboarding/OnboardingWizard';
+import OfflineBanner from '@/components/DailyCard/OfflineBanner';
 
 function MainApp() {
   useKeyboardShortcuts();
+  const isOnline = useNetworkStatus();
   const addToast = useToastStore((s) => s.addToast);
 
   const [activePage, setActivePage] = useState<
@@ -49,10 +52,11 @@ function MainApp() {
       <main className="flex-1 overflow-y-auto p-6">
         {activePage === 'daily' && (
           <div className="flex flex-col items-center gap-6 py-8">
+            {!isOnline && <OfflineBanner />}
             <QuotaBar />
             <ProviderSelector />
             <DailyTheme />
-            <PromptInput />
+            <PromptInput isOnline={isOnline} />
             <ImageGrid />
           </div>
         )}

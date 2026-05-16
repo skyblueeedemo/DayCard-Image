@@ -1,0 +1,9 @@
+[
+  { "id": "cyberpunk", "name": "赛博朋克", "prompt": "cyberpunk aesthetic, neon lights, high tech low life, rain-slicked streets, holographic projections" },
+  { "id": "ink-wash", "name": "水墨画", "prompt": "traditional Chinese ink wash painting style, elegant brushstrokes, misty mountains, rice paper texture" },
+  { "id": "oil-painting", "name": "油画", "prompt": "oil painting on canvas, rich textures, impasto technique, classical composition, museum quality" },
+  { "id": "minimalist", "name": "极简主义", "prompt": "minimalist composition, clean lines, negative space, subtle color palette, modern aesthetic" },
+  { "id": "watercolor", "name": "水彩", "prompt": "watercolor illustration, soft pastel colors, dreamy atmosphere, hand-painted style, textured paper" },
+  { "id": "astro-photo", "name": "星空摄影", "prompt": "astrophotography, cosmic scene, deep space, colorful nebula, crisp stars, NASA quality" },
+  { "id": "vintage-film", "name": "复古胶片", "prompt": "vintage film photography, warm tones, analog grain, golden hour light, nostalgic mood, Kodak Portra" }
+]

@@ -1,4 +1,4 @@
-import Store from 'electron-store';
+import { readStore, writeStore } from '../storage';
 
 interface AppSettings {
   firstLaunch: boolean;
@@ -7,6 +7,8 @@ interface AppSettings {
   schedulerTime: string;
   preferredProvider: string;
 }
+
+const STORE_NAME = 'settings';
 
 const defaults: AppSettings = {
   firstLaunch: true,
@@ -17,28 +19,28 @@ const defaults: AppSettings = {
 };
 
 class SettingsService {
-  private store: Store<AppSettings>;
-
-  constructor() {
-    this.store = new Store<AppSettings>({ defaults });
-  }
-
   getAll(): AppSettings {
-    return this.store.store;
+    return readStore<AppSettings>(STORE_NAME, defaults);
   }
 
   get<K extends keyof AppSettings>(key: K): AppSettings[K] {
-    return this.store.get(key);
+    const data = this.getAll();
+    return data[key];
   }
 
   set<K extends keyof AppSettings>(key: K, value: AppSettings[K]): AppSettings {
-    this.store.set(key, value);
-    return this.getAll();
+    const data = this.getAll();
+    data[key] = value;
+    writeStore(STORE_NAME, data);
+    return data;
   }
 
   reset(key: keyof AppSettings): AppSettings {
-    this.store.delete(key);
-    return this.getAll();
+    const data = this.getAll();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (data as any)[key] = defaults[key];
+    writeStore(STORE_NAME, data);
+    return data;
   }
 }
 

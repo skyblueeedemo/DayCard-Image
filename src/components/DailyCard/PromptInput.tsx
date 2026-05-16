@@ -1,6 +1,10 @@
 import { useGenerationStore } from '@/store/generationStore';
 
-export default function PromptInput() {
+interface PromptInputProps {
+  isOnline?: boolean;
+}
+
+export default function PromptInput({ isOnline = true }: PromptInputProps) {
   const prompt = useGenerationStore((s) => s.prompt);
   const isGenerating = useGenerationStore((s) => s.isGenerating);
   const error = useGenerationStore((s) => s.error);
@@ -8,8 +12,10 @@ export default function PromptInput() {
   const generate = useGenerationStore((s) => s.generate);
   const clearError = useGenerationStore((s) => s.clearError);
 
+  const quotaExhausted = error?.includes('额度已用尽');
+
   const handleSubmit = () => {
-    if (!prompt.trim() || isGenerating) return;
+    if (!prompt.trim() || isGenerating || quotaExhausted || !isOnline) return;
     generate();
   };
 
@@ -41,7 +47,7 @@ export default function PromptInput() {
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="描述你想要的图像... (Enter 发送，Shift+Enter 换行)"
-          disabled={isGenerating}
+          disabled={isGenerating || !isOnline}
           rows={3}
           maxLength={500}
           className="w-full resize-none rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -51,7 +57,8 @@ export default function PromptInput() {
           <span className="text-xs text-gray-500">{prompt.length}/500</span>
           <button
             onClick={handleSubmit}
-            disabled={!prompt.trim() || isGenerating}
+            disabled={!prompt.trim() || isGenerating || quotaExhausted || !isOnline}
+            title={!isOnline ? '离线状态无法生成' : quotaExhausted ? (error ?? undefined) : undefined}
             className="px-4 py-1.5 rounded-md bg-blue-600 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           >
             {isGenerating && (
@@ -60,7 +67,7 @@ export default function PromptInput() {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
             )}
-            {isGenerating ? '生成中...' : '生成'}
+            {isGenerating ? '生成中...' : !isOnline ? '离线中' : quotaExhausted ? '额度已用完' : '生成'}
           </button>
         </div>
       </div>

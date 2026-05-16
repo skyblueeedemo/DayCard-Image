@@ -1,10 +1,13 @@
+import { buildDailyPrompt } from './promptEngine';
+
 export interface Theme {
   name: string;
   description: string;
   prompt: string;
 }
 
-const themes: Theme[] = [
+// 保留旧主题数组作为离线/降级备用
+const fallbackThemes: Theme[] = [
   {
     name: '自然风光',
     description: '壮丽的山川湖海，宁静的自然画卷',
@@ -43,6 +46,16 @@ const themes: Theme[] = [
 ];
 
 export function getTodayTheme(): Theme {
-  const day = new Date().getDay();
-  return themes[day];
+  try {
+    const result = buildDailyPrompt(new Date());
+    return {
+      name: `${result.style.name} × ${result.scene.name}`,
+      description: `${result.composition.name} 构图`,
+      prompt: result.prompt,
+    };
+  } catch {
+    // JSON 导入失败时降级到硬编码主题
+    const day = new Date().getDay();
+    return fallbackThemes[day];
+  }
 }

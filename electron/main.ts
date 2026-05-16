@@ -4,9 +4,13 @@ import { imageIpc } from './ipc/imageGeneration';
 import { fileSystemIpc } from './ipc/fileSystem';
 import { registerSystemIpc } from './ipc/system';
 import { registerWallpaperIpc } from './ipc/wallpaper';
+import { registerQuotaIpc } from './ipc/quota';
+import { registerPreferenceIpc } from './ipc/preference';
 
 import { trayManager } from './tray/TrayManager';
 import { schedulerService } from './services/SchedulerService';
+import { networkService } from './services/NetworkService';
+import { updateService } from './services/UpdateService';
 
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
@@ -25,7 +29,7 @@ function createWindow(): void {
     },
   });
 
-  if (process.env.NODE_ENV === 'development') {
+  if (!app.isPackaged) {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
@@ -66,20 +70,26 @@ function registerIpcHandlers(): void {
     }
   });
 
-  ipcMain.handle('quota:get', async (_event, providerId: string) => {
-    try {
-      const quota = imageIpc.getQuota(providerId);
-      return { status: 'ok', data: quota };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '获取配额失败';
-      return { status: 'error', message };
-    }
-  });
-
   ipcMain.handle('file:save-image', fileSystemIpc.handleSaveImage);
 
   registerSystemIpc();
   registerWallpaperIpc();
+  registerQuotaIpc();
+  registerPreferenceIpc();
+
+  // Auto-update handlers
+  ipcMain.handle('update:check', async () => {
+    await updateService.checkForUpdates(false);
+    return { status: 'ok' };
+  });
+  ipcMain.handle('update:download', async () => {
+    await updateService.downloadUpdate();
+    return { status: 'ok' };
+  });
+  ipcMain.handle('update:install', async () => {
+    updateService.installUpdate();
+    return { status: 'ok' };
+  });
 }
 
 // ─── App Lifecycle ──────────────────────────────────────
@@ -89,6 +99,9 @@ app.whenReady().then(() => {
   trayManager.init(mainWindow!);
   schedulerService.setWindow(mainWindow!);
   schedulerService.initialize();
+  networkService.setWindow(mainWindow!);
+  networkService.startMonitoring();
+  updateService.initialize(mainWindow!);
 
   app.on('activate', () => {
     if (mainWindow) {
@@ -98,6 +111,9 @@ app.whenReady().then(() => {
       trayManager.init(mainWindow!);
       schedulerService.setWindow(mainWindow!);
       schedulerService.initialize();
+      networkService.setWindow(mainWindow!);
+      networkService.startMonitoring();
+      updateService.initialize(mainWindow!);
     }
   });
 });

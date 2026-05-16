@@ -1,6 +1,6 @@
 {
   "name": "daycard-image",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "拾光匣 - 跨平台 AI 图像生成桌面应用",
   "main": "dist-electron/main.js",
   "author": "DayCard-Image Team",
@@ -20,7 +20,8 @@
   },
   "dependencies": {
     "auto-launch": "^5.0.6",
-    "electron-store": "^11.0.2",
+    "electron-store": "^10.1.0",
+    "electron-updater": "^6.8.3",
     "node-cron": "^4.2.1",
     "openai": "^4.47.0",
     "react": "^18.2.0",
@@ -29,6 +30,7 @@
     "zustand": "^4.5.0"
   },
   "devDependencies": {
+    "@types/node-cron": "^3.0.11",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@types/sharp": "^0.31.1",
@@ -56,6 +58,11 @@
   "build": {
     "appId": "com.daycard-image.app",
     "productName": "拾光匣",
+    "publish": {
+      "provider": "github",
+      "owner": "skyblueeedemo",
+      "repo": "DayCard-Image"
+    },
     "directories": {
       "output": "release"
     },

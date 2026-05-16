@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ImageResult } from '@/providers/IImageProvider';
 import { useGenerationStore } from '@/store/generationStore';
 import { useWallpaper } from '@/hooks/useWallpaper';
+import { buildDailyPrompt } from '@/utils/promptEngine';
 
 interface ImageCardProps {
   result: ImageResult;
@@ -22,6 +23,47 @@ export default function ImageCard({ result }: ImageCardProps) {
   const [saving, setSaving] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [liked, setLiked] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
+
+  // 从日期推导当日的 style/scene/composition（与 promptEngine 确定性一致）
+  const genDate = new Date(result.metadata.generatedAt);
+  const dailyPrompt = buildDailyPrompt(genDate);
+
+  useEffect(() => {
+    if (window.electronAPI?.getLikedResults) {
+      window.electronAPI.getLikedResults().then((res) => {
+        if (res.status === 'ok' && res.data?.includes(result.url)) {
+          setLiked(true);
+        }
+      }).catch(() => {});
+    }
+  }, [result.url]);
+
+  const handleLikeToggle = async () => {
+    if (!window.electronAPI?.likePrompt || !window.electronAPI?.unlikePrompt) return;
+    setLikeLoading(true);
+    try {
+      const params = {
+        imageUrl: result.url,
+        styleId: dailyPrompt.style.id,
+        sceneId: dailyPrompt.scene.id,
+        compositionId: dailyPrompt.composition.id,
+      };
+
+      if (liked) {
+        const res = await window.electronAPI.unlikePrompt(params);
+        if (res.status === 'ok') setLiked(false);
+      } else {
+        const res = await window.electronAPI.likePrompt(params);
+        if (res.status === 'ok') setLiked(true);
+      }
+    } catch {
+      // 静默失败
+    } finally {
+      setLikeLoading(false);
+    }
+  };
 
   const badgeClass = providerColors[result.provider] ?? 'bg-gray-700 text-gray-200';
 
@@ -107,6 +149,22 @@ export default function ImageCard({ result }: ImageCardProps) {
             {new Date(result.metadata.generatedAt).toLocaleTimeString()}
           </span>
         </div>
+
+        {/* Like 按钮 */}
+        {window.electronAPI && (
+          <button
+            onClick={handleLikeToggle}
+            disabled={likeLoading}
+            className={`text-xs py-0.5 px-2 rounded-full transition-colors ${
+              liked
+                ? 'bg-red-900/40 text-red-400 border border-red-700'
+                : 'bg-gray-700 text-gray-400 border border-transparent hover:border-gray-500'
+            }`}
+            title={liked ? '取消喜欢' : '喜欢这个结果'}
+          >
+            {liked ? '❤' : '♡'} {liked ? '已喜欢' : '喜欢'}
+          </button>
+        )}
 
         <div className="flex gap-2">
           <button

@@ -4,9 +4,10 @@ import { providerManager } from '@/providers/ProviderManager';
 import { useGenerationStore } from '@/store/generationStore';
 
 function getBarColor(ratio: number): string {
-  if (ratio > 0.5) return 'bg-green-500';
-  if (ratio > 0.2) return 'bg-yellow-500';
-  return 'bg-red-500';
+  if (ratio >= 1) return 'bg-red-600';
+  if (ratio > 0.75) return 'bg-red-500';
+  if (ratio > 0.5) return 'bg-yellow-500';
+  return 'bg-green-500';
 }
 
 export default function QuotaBar() {
@@ -40,6 +41,7 @@ export default function QuotaBar() {
 
   const ratio = quota.total > 0 ? quota.used / quota.total : 0;
   const pct = Math.round(ratio * 100);
+  const isExhausted = quota.total !== Infinity && quota.used >= quota.total;
 
   return (
     <div className="w-full max-w-2xl flex items-center gap-3 text-xs">
@@ -49,8 +51,11 @@ export default function QuotaBar() {
           style={{ width: `${Math.max(pct, 2)}%` }}
         />
       </div>
-      <span className="text-gray-400 whitespace-nowrap">
+      <span className={`whitespace-nowrap ${isExhausted ? 'text-red-400 font-medium' : 'text-gray-400'}`}>
         {quota.used} / {quota.total === Infinity ? '∞' : quota.total}
+        {isExhausted && (
+          <span className="ml-1 text-red-500">已耗尽</span>
+        )}
       </span>
     </div>
   );

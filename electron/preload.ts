@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 配额查询
   getQuota: (providerId: string) => ipcRenderer.invoke('quota:get', providerId),
+  getQuotaHistory: (providerId: string) => ipcRenderer.invoke('quota:history', providerId),
+  getAllQuotas: () => ipcRenderer.invoke('quota:all'),
 
   // 文件保存
   saveImage: (params: { imageUrl: string; defaultName?: string }) =>
@@ -26,6 +28,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setWallpaper: (params: { imagePath: string }) =>
     ipcRenderer.invoke('wallpaper:set', params),
 
+  // 偏好反馈
+  likePrompt: (params: { imageUrl: string; styleId: string; sceneId: string; compositionId: string }) =>
+    ipcRenderer.invoke('preference:like', params),
+  unlikePrompt: (params: { imageUrl: string; styleId: string; sceneId: string; compositionId: string }) =>
+    ipcRenderer.invoke('preference:unlike', params),
+  getPreferenceWeights: () => ipcRenderer.invoke('preference:get-weights'),
+  getLikedResults: () => ipcRenderer.invoke('preference:get-liked'),
+
+  // 自动更新
+  checkForUpdate: () => ipcRenderer.invoke('update:check'),
+  downloadUpdate: () => ipcRenderer.invoke('update:download'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
+
   // 系统设置
   getSettings: () => ipcRenderer.invoke('settings:get'),
   updateSetting: (key: string, value: unknown) =>
@@ -33,7 +48,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 主进程事件订阅（白名单通道）
   onEvent: (channel: string, callback: (data: unknown) => void) => {
-    const allowed = ['navigate-to', 'scheduler:completed'];
+    const allowed = ['navigate-to', 'scheduler:completed', 'network:status-changed', 'update:available', 'update:not-available', 'update:downloaded', 'update:error'];
     if (!allowed.includes(channel)) return () => {};
     const handler = (_event: Electron.IpcRendererEvent, data: unknown) => callback(data);
     ipcRenderer.on(channel, handler);

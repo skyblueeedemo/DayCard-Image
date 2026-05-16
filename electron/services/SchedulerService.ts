@@ -1,10 +1,10 @@
 import { Notification, BrowserWindow } from 'electron';
-import cron from 'node-cron';
+import cron, { ScheduledTask } from 'node-cron';
 import { settingsService } from './SettingsService';
 import { imageIpc } from '../ipc/imageGeneration';
 
 class SchedulerService {
-  private task: cron.ScheduledTask | null = null;
+  private task: ScheduledTask | null = null;
   private mainWindow: BrowserWindow | null = null;
 
   setWindow(win: BrowserWindow): void {

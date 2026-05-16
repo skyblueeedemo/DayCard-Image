@@ -1,5 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { quotaService } from '../services/QuotaService';
+import type { QuotaInfo } from '../services/QuotaService';
+import { validateImageResult } from '../services/ImageValidator';
 
 interface ProviderConfig {
   apiKey: string;
@@ -18,13 +21,6 @@ interface GenerateParams {
   options?: Record<string, unknown>;
 }
 
-interface QuotaInfo {
-  used: number;
-  total: number;
-  resetAt?: string;
-  unit: 'count' | 'credit';
-}
-
 interface ProviderMeta {
   id: string;
   name: string;
@@ -39,37 +35,6 @@ function loadConfig(): Config | null {
     return JSON.parse(raw);
   } catch {
     return null;
-  }
-}
-
-// 简单的内存配额追踪
-const quotaTracker = new Map<string, { used: number; date: string }>();
-
-const QUOTA_LIMITS: Record<string, number> = {
-  openai: 5,
-  stability: Infinity,
-  zhipu: Infinity,
-  aliyun: Infinity,
-};
-
-function getQuota(providerId: string): QuotaInfo {
-  const today = new Date().toISOString().slice(0, 10);
-  const entry = quotaTracker.get(providerId);
-  const used = entry?.date === today ? entry.used : 0;
-  const limit = QUOTA_LIMITS[providerId] ?? Infinity;
-  const resetAt = new Date(new Date().setUTCHours(24, 0, 0, 0)).toISOString();
-
-  return { used, total: limit, resetAt, unit: limit === Infinity ? 'credit' : 'count' };
-}
-
-function incrementQuota(providerId: string): void {
-  const today = new Date().toISOString().slice(0, 10);
-  const entry = quotaTracker.get(providerId);
-
-  if (entry?.date === today) {
-    entry.used += 1;
-  } else {
-    quotaTracker.set(providerId, { used: 1, date: today });
   }
 }
 
@@ -371,9 +336,9 @@ async function handleGenerate(params: GenerateParams): Promise<Record<string, un
     throw new Error(`Provider "${providerId}" 未配置 API Key`);
   }
 
-  const quota = getQuota(providerId);
-  if (quota.total !== Infinity && quota.used >= quota.total) {
-    throw new Error(`[${providerId}] 今日额度已用尽 (${quota.used}/${quota.total})`);
+  const check = quotaService.canGenerate(providerId);
+  if (!check.allowed) {
+    throw new Error(check.reason ?? `[${providerId}] 额度已用尽`);
   }
 
   const handler = GENERATE_HANDLERS[providerId];
@@ -381,13 +346,31 @@ async function handleGenerate(params: GenerateParams): Promise<Record<string, un
     throw new Error(`Provider "${providerId}" 暂未支持`);
   }
 
-  const result = await handler(providerConfig, params);
-  incrementQuota(providerId);
-  return result;
+  const MAX_VALIDATION_RETRIES = 2;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= MAX_VALIDATION_RETRIES; attempt++) {
+    try {
+      const result = await handler(providerConfig, params);
+      const validation = await validateImageResult(result);
+      if (validation.valid) {
+        quotaService.incrementQuota(providerId);
+        return result;
+      }
+      console.warn(
+        `[ImageValidator] 校验失败 (attempt ${attempt + 1}/${MAX_VALIDATION_RETRIES + 1}): ${validation.reason}`,
+      );
+      lastError = new Error(`图像质量校验失败: ${validation.reason}`);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+    }
+  }
+
+  throw lastError ?? new Error('图像生成失败');
 }
 
 export const imageIpc = {
   handleGenerate,
   getProviders,
-  getQuota,
+  getQuota: (providerId: string): QuotaInfo => quotaService.getQuota(providerId),
 };

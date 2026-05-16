@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useSettingsStore } from '../../store/settingsStore';
 
 function ToggleSwitch({
@@ -38,6 +39,66 @@ export default function Settings() {
     schedulerTime,
     updateSetting,
   } = useSettingsStore();
+
+  const [updateStatus, setUpdateStatus] = useState<
+    'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'error'
+  >('idle');
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubAvailable = window.electronAPI?.onEvent('update:available', (data) => {
+      if (typeof data === 'object' && data && 'version' in data) {
+        setUpdateVersion((data as { version: string }).version);
+        setUpdateStatus('available');
+      }
+    });
+    const unsubNotAvailable = window.electronAPI?.onEvent('update:not-available', () => {
+      if (updateStatus === 'checking') setUpdateStatus('idle');
+    });
+    const unsubDownloaded = window.electronAPI?.onEvent('update:downloaded', () => {
+      setUpdateStatus('downloaded');
+    });
+    const unsubError = window.electronAPI?.onEvent('update:error', (data) => {
+      const msg = typeof data === 'object' && data && 'message' in data
+        ? (data as { message: string }).message
+        : '更新错误';
+      setUpdateError(msg);
+      setUpdateStatus('error');
+    });
+
+    return () => {
+      unsubAvailable?.();
+      unsubNotAvailable?.();
+      unsubDownloaded?.();
+      unsubError?.();
+    };
+  }, [updateStatus]);
+
+  const handleCheckUpdate = async () => {
+    setUpdateStatus('checking');
+    setUpdateError(null);
+    try {
+      await window.electronAPI?.checkForUpdate?.();
+    } catch {
+      setUpdateError('检查更新失败');
+      setUpdateStatus('error');
+    }
+  };
+
+  const handleDownloadUpdate = async () => {
+    setUpdateStatus('downloading');
+    try {
+      await window.electronAPI?.downloadUpdate?.();
+    } catch {
+      setUpdateError('下载失败');
+      setUpdateStatus('error');
+    }
+  };
+
+  const handleInstallUpdate = () => {
+    window.electronAPI?.installUpdate?.();
+  };
 
   return (
     <div className="flex flex-col items-center py-8">
@@ -103,10 +164,58 @@ export default function Settings() {
 
         <div className="rounded-lg border border-gray-700 bg-gray-800 p-6">
           <h3 className="text-sm font-medium text-gray-200 mb-3">关于</h3>
-          <div className="text-sm text-gray-400 flex flex-col gap-1">
-            <p>拾光匣 DayCard-Image v1.1.0</p>
+          <div className="text-sm text-gray-400 flex flex-col gap-2">
+            <p>拾光匣 DayCard-Image v1.2.0</p>
             <p>跨平台 AI 图像生成桌面应用</p>
-            <p className="text-xs text-gray-600 mt-2">Electron + React + TypeScript + TailwindCSS</p>
+            <p className="text-xs text-gray-600 mt-1">Electron + React + TypeScript + TailwindCSS</p>
+
+            <div className="mt-3 pt-3 border-t border-gray-700/50">
+              {updateStatus === 'idle' && (
+                <button
+                  onClick={handleCheckUpdate}
+                  className="text-xs px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+                >
+                  检查更新
+                </button>
+              )}
+              {updateStatus === 'checking' && (
+                <span className="text-xs text-gray-400 flex items-center gap-2">
+                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  正在检查更新...
+                </span>
+              )}
+              {updateStatus === 'available' && updateVersion && (
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-green-400">新版本 v{updateVersion} 可用</span>
+                  <button
+                    onClick={handleDownloadUpdate}
+                    className="text-xs px-3 py-1 rounded bg-green-600 text-white hover:bg-green-500 transition-colors"
+                  >
+                    立即更新
+                  </button>
+                </div>
+              )}
+              {updateStatus === 'downloading' && (
+                <span className="text-xs text-blue-400">正在下载更新...</span>
+              )}
+              {updateStatus === 'downloaded' && (
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-green-400">更新已下载，重启生效</span>
+                  <button
+                    onClick={handleInstallUpdate}
+                    className="text-xs px-3 py-1 rounded bg-green-600 text-white hover:bg-green-500 transition-colors"
+                  >
+                    立即重启
+                  </button>
+                </div>
+              )}
+              {updateStatus === 'error' && (
+                <span className="text-xs text-red-400">{updateError ?? '检查更新失败'}</span>
+              )}
+            </div>
           </div>
         </div>
       </div>

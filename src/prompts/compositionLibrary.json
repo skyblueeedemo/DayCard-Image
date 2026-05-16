@@ -1,0 +1,6 @@
+[
+  { "id": "wide-angle", "name": "超广角", "prompt": "ultra wide angle lens, 8K resolution, hyper detailed, expansive view, everything in sharp focus" },
+  { "id": "golden-ratio", "name": "黄金构图", "prompt": "golden ratio composition, cinematic lighting, rule of thirds, masterful framing, professional cinematography" },
+  { "id": "close-up", "name": "特写微距", "prompt": "close-up macro shot, shallow depth of field, creamy bokeh, intimate perspective, fine details visible" },
+  { "id": "drone-aerial", "name": "航拍视角", "prompt": "drone aerial view, bird's eye perspective, epic scale, sweeping panorama, top-down composition" }
+]

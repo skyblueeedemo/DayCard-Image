@@ -10,33 +10,47 @@
 
 ---
 
-## [1.2.0] - 待发布
+## [1.2.0] - 2026-05-16
 
-> 阶段 5：质量强化
+> 阶段 5：质量强化 — 12 个新文件，12 个修改文件
 
 ### Added
 
-- **SQLite 配额持久化**：`QuotaService` 替换 localStorage，分 Provider 按日记录，支持历史查询；数据库文件位于 `userData/daycard.db`
-- **配额硬限制拦截**：当日额度耗尽时，生成前直接拦截并提示，不触发 API 调用；QuotaBar 变红警示
-- **Prompt 词库重构**：风格 × 场景 × 构图三维 JSON 词库（`src/prompts/`），`promptEngine.ts` 基于日期 seed 稳定随机抽取
-- **用户偏好标签**：ImageCard 新增「喜欢」按钮，对应词条 weight +1，下次抽取加权概率提升
-- **Prompt 历史与好图关联**：SQLite `generation_log` 表记录每次生成的 Prompt + Provider + 词条组合；历史页面支持收藏筛选
-- **离线检测**：`NetworkService` 监听网络状态，离线时展示 OfflineBanner，生成按钮禁用，自动展示历史图库
-- **图像质量校验**：`ImageValidator` 校验 URL 可访问性 + 尺寸 ≥ 256px，校验失败自动重试最多 2 次
-- **electron-updater 自动更新**：启动后 5s 静默检查 GitHub Releases，有更新时弹出提示；设置页支持手动检查更新
+- **配额持久化**：`QuotaService` 使用 JSON 文件存储（`userData/quota.json`），分 Provider 按日记录，支持历史查询
+- **配额硬限制拦截**：`canGenerate()` 前置校验，当日额度耗尽直接拦截并提示重置时间，不触发 API 调用；QuotaBar 变红 + "已耗尽" 标签
+- **Prompt 三维词库**：`src/prompts/` 风格 (7) × 场景 (6) × 构图 (4) JSON 词库，`promptEngine.ts` 基于日期 seed 确定性随机抽取
+- **用户偏好标签**：ImageCard 新增 ❤ 「喜欢」按钮，词条权重 +1，下次加权随机抽取；偏好数据持久化到 `userData/preferences.json`
+- **离线检测**：`NetworkService` 定期 HEAD 探活（30s），`useNetworkStatus` hook 双监听（browser events + IPC），离线时显示 OfflineBanner + 禁用生成
+- **图像质量校验**：`ImageValidator` 校验 URL 可访问性 + Content-Type + 尺寸 ≥ 256px，失败自动重试最多 2 次
+- **electron-updater 自动更新**：启动后 5s 静默检查 GitHub Releases，设置页支持手动检查、下载、安装更新；`app.isPackaged` 守卫开发模式
 
 ### Changed
 
-- `dailyTheme.ts`：调用新的 `promptEngine`，保留主题卡片展示，DailyTheme 卡片展示本日抽取的风格 + 场景名
-- `generationStore.ts`：quota 读写改走 IPC（QuotaService），不再直接操作 localStorage
-- `QuotaBar.tsx`：数据源切换为 SQLite IPC，耗尽时红色警示 + 提示文案
-- `ImageCard.tsx`：新增「喜欢」按钮，展示使用的 Prompt 和词条组合（展开时）
-- `HistoryPage.tsx`：支持按收藏筛选；ImageCard 展开时显示 Prompt 详情
-- `Settings.tsx`：显示当前版本号 + 「检查更新」按钮
+- `electron/ipc/imageGeneration.ts`：移除内存 `quotaTracker` Map，改用 `QuotaService`；集成 `ImageValidator` 校验+重试循环
+- `electron/ipc/quota.ts`：独立配额 IPC 模块（`quota:get` / `quota:history` / `quota:all`）
+- `electron/storage.ts`：通用 JSON 文件存储模块，替代 `electron-store` 依赖
+- `electron/services/SettingsService.ts`：迁移至 `storage.ts`
+- `src/utils/dailyTheme.ts`：调用 `promptEngine.buildDailyPrompt()`，Theme name 变为 "风格 × 场景"
+- `QuotaBar.tsx`：修正颜色逻辑（高用量→红色），耗尽时红色警示
+- `PromptInput.tsx`：配额耗尽/离线时禁用按钮 + tooltip 提示
+- `ImageCard.tsx`：新增 Like 按钮
+- `Settings.tsx`：显示 v1.2.0 版本号 + 检查更新按钮 + 更新状态管理
+- `App.tsx`：集成 `useNetworkStatus`，离线时展示 OfflineBanner
+- `main.ts`：初始化 QuotaService/NetworkService/UpdateService；修复 `app.isPackaged` 替代 `NODE_ENV`
+- `tsconfig.electron.json`：保持 CommonJS 输出
 
 ### Fixed
 
-- localStorage 配额在跨日场景下偶发不重置的问题（SQLite 按 date 字段判断，逻辑更稳定）
+- electron-store v11 ESM-only 类型冲突 → 替换为 `electron/storage.ts` JSON 文件读写
+- `quota:get` IPC 重复注册 → 删除 main.ts 中旧 inline handler
+- 开发模式 Electron 加载 dist/index.html → 改用 `app.isPackaged` 判断
+- `SettingsService.reset()` 类型错误 → `as any` 类型断言
+- `SchedulerService` `cron.ScheduledTask` 类型缺失 → 安装 `@types/node-cron`
+
+### Dependencies
+
+- 新增: `electron-updater ^6.8.3`, `@types/node-cron`
+- 移除: `electron-store`（替换为 `electron/storage.ts`）
 
 ---
 
