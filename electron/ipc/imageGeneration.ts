@@ -135,7 +135,8 @@ async function handleOpenAI(config: ProviderConfig, params: GenerateParams): Pro
 }
 
 async function handleStability(config: ProviderConfig, params: GenerateParams): Promise<Record<string, unknown>> {
-  const engineId = config.engineId ?? 'stable-diffusion-xl-1024-v1-0';
+  const baseURL = config.baseURL ?? 'https://api.stability.ai';
+  const engineId = (params.options?.model as string) ?? config.engineId ?? 'stable-diffusion-xl-1024-v1-0';
 
   const body = {
     text_prompts: [{ text: params.prompt, weight: 1 }],
@@ -147,7 +148,7 @@ async function handleStability(config: ProviderConfig, params: GenerateParams): 
   };
 
   const response = await fetch(
-    `https://api.stability.ai/v1/generation/${engineId}/text-to-image`,
+    `${baseURL}/v1/generation/${engineId}/text-to-image`,
     {
       method: 'POST',
       headers: {
@@ -191,7 +192,8 @@ async function handleStability(config: ProviderConfig, params: GenerateParams): 
 }
 
 async function handleZhipu(config: ProviderConfig, params: GenerateParams): Promise<Record<string, unknown>> {
-  const model = config.model ?? 'cogview-3';
+  const baseURL = config.baseURL ?? 'https://open.bigmodel.cn/api/paas/v4';
+  const model = (params.options?.model as string) ?? config.model ?? 'cogview-3';
 
   const body = {
     model,
@@ -200,7 +202,7 @@ async function handleZhipu(config: ProviderConfig, params: GenerateParams): Prom
   };
 
   const response = await fetch(
-    'https://open.bigmodel.cn/api/paas/v4/images/generations',
+    `${baseURL}/images/generations`,
     {
       method: 'POST',
       headers: {
@@ -255,8 +257,9 @@ async function handleAliyun(config: ProviderConfig, params: GenerateParams): Pro
     (body.parameters as Record<string, unknown>).negative_prompt = params.options.negativePrompt;
   }
 
+  const baseURL = config.baseURL ?? 'https://dashscope.aliyuncs.com';
   const res = await fetch(
-    'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+    `${baseURL}/api/v1/services/aigc/multimodal-generation/generation`,
     {
       method: 'POST',
       headers: {
