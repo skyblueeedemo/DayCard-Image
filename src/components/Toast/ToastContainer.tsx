@@ -1,4 +1,13 @@
+import { CheckCircle2, XCircle, Info, X } from 'lucide-react';
 import { useToastStore } from '../../store/toastStore';
+
+const ICON_PROPS = { size: 16, strokeWidth: 1.75 } as const;
+
+function ToastIcon({ type }: { type: 'success' | 'error' | 'info' }) {
+  if (type === 'success') return <CheckCircle2 {...ICON_PROPS} className="flex-shrink-0" />;
+  if (type === 'error') return <XCircle {...ICON_PROPS} className="flex-shrink-0" />;
+  return <Info {...ICON_PROPS} className="flex-shrink-0" />;
+}
 
 export default function ToastContainer() {
   const toasts = useToastStore((s) => s.toasts);
@@ -19,13 +28,15 @@ export default function ToastContainer() {
                 : 'border-border-default dark:border-border-default bg-surface-2 dark:bg-surface-2 text-fg-primary dark:text-fg-primary'
           }`}
         >
-          <div className="flex items-center gap-3">
-            <span>{toast.message}</span>
+          <div className="flex items-center gap-2">
+            <ToastIcon type={toast.type} />
+            <span className="flex-1">{toast.message}</span>
             <button
               onClick={() => removeToast(toast.id)}
-              className="text-current opacity-70 hover:opacity-100"
+              className="text-current opacity-50 hover:opacity-100 transition-opacity flex-shrink-0"
+              aria-label="关闭"
             >
-              &times;
+              <X size={14} strokeWidth={2} />
             </button>
           </div>
         </div>
