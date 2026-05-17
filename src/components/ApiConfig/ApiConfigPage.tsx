@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToastStore } from '../../store/toastStore';
 import { useGenerationStore } from '../../store/generationStore';
 import { loadOrder, saveOrder, loadModelOrder, saveModelOrder } from '../../utils/providerOrder';
+import { getProviderLabels, getDefaultModels } from '../../providers/registry';
 
 interface ModelInfo {
   description?: string;
@@ -18,27 +19,6 @@ interface ProviderEntry {
 interface ConfigData {
   providers: Record<string, ProviderEntry>;
 }
-
-const PROVIDER_LABELS: Record<string, string> = {
-  aliyun: 'DashScope (阿里云)',
-  openai: 'OpenAI',
-  stability: 'Stability AI',
-  zhipu: '智谱 CogView',
-  ...(import.meta.env.DEV ? { mock: 'Mock 模型服务 (Dev)' } : {}),
-};
-
-const DEFAULT_MODELS: Record<string, Record<string, ModelInfo>> = {
-  aliyun: {
-    'wan2.7-image-pro': { description: '文字渲染、品牌色、角色一致性多图生成、多图编辑', remaining: 50, total: 50 },
-    'wan2.7-image': { description: '生成速度更快，最高2K', remaining: 50, total: 50 },
-    'z-image-turbo': { description: '快速生成、低成本、写实人像', remaining: 100, total: 100 },
-    'qwen-image-2.0': { description: '', remaining: 100, total: 100 },
-    'qwen-image-2.0-2026-03-03': { description: '', remaining: 100, total: 100 },
-    'qwen-image-2.0-pro-2026-03-03': { description: '负向提示词、最多6张图片变体', remaining: 100, total: 100 },
-    'qwen-image-2.0-pro': { description: '负向提示词、最多6张图片变体', remaining: 97, total: 100 },
-    'qwen-image-2.0-pro-2026-04-22': { description: '负向提示词、最多6张图片变体', remaining: 100, total: 100 },
-  },
-};
 
 function sortEntries(entries: [string, string][], order: string[]): [string, string][] {
   if (order.length === 0) return entries;
@@ -66,6 +46,10 @@ export default function ApiConfigPage() {
   const activeProviderId = useGenerationStore((s) => s.activeProviderId);
   const setActiveProvider = useGenerationStore((s) => s.setActiveProvider);
 
+  // 从注册表读取标签与默认模型（按 import.meta.env.DEV 过滤 Mock）
+  const providerLabels = useMemo(() => getProviderLabels(import.meta.env.DEV), []);
+  const defaultModels = useMemo(() => getDefaultModels(), []);
+
   const loadConfig = useCallback(async () => {
     if (!window.electronAPI?.getConfig) {
       setLoading(false);
@@ -80,7 +64,7 @@ export default function ApiConfigPage() {
         setProviderOrder(loadOrder());
         // 加载所有 provider 的模型排序
         const mo: Record<string, string[]> = {};
-        for (const pid of Object.keys(PROVIDER_LABELS)) {
+        for (const pid of Object.keys(providerLabels)) {
           mo[pid] = loadModelOrder(pid);
         }
         setModelOrders(mo);
@@ -143,7 +127,7 @@ export default function ApiConfigPage() {
 
   const handleInitModels = async (providerId: string) => {
     if (!window.electronAPI?.updateConfig) return;
-    const models = DEFAULT_MODELS[providerId];
+    const models = defaultModels[providerId];
     if (!models) return;
     setSaving(true);
     try {
@@ -192,7 +176,7 @@ export default function ApiConfigPage() {
   }
 
   const providers = config?.providers ?? {};
-  const entries = Object.entries(PROVIDER_LABELS);
+  const entries = Object.entries(providerLabels);
   const sortedEntries = sortEntries(entries, providerOrder);
 
   const cardClass = "rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 mb-3 overflow-hidden";
