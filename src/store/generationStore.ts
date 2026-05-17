@@ -41,6 +41,12 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
     const { prompt, activeProviderId, activeModelId } = get();
     if (!prompt.trim()) return;
 
+    // 阿里云必须选择模型才能生成
+    if (activeProviderId === 'aliyun' && !activeModelId) {
+      set({ error: '请先在模型选择器中选择一个模型' });
+      return;
+    }
+
     set({ isGenerating: true, error: null });
 
     try {
@@ -81,6 +87,13 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
 
   retryGenerate: async (prompt: string) => {
     const { activeProviderId, activeModelId } = get();
+
+    // 阿里云必须选择模型才能生成
+    if (activeProviderId === 'aliyun' && !activeModelId) {
+      set({ error: '请先在模型选择器中选择一个模型' });
+      return;
+    }
+
     set({ isGenerating: true, error: null });
 
     try {

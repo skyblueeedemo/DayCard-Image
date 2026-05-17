@@ -33,6 +33,14 @@ export default function FavoritesPage() {
     refresh();
   }, [refresh]);
 
+  const handleDelete = useCallback((deleted: ImageResult) => {
+    setLikedResults((prev) =>
+      prev.filter(
+        (r) => r.url !== deleted.url || r.metadata.generatedAt !== deleted.metadata.generatedAt,
+      ),
+    );
+  }, []);
+
   if (loading) {
     return (
       <div className="flex justify-center py-16">
@@ -58,6 +66,7 @@ export default function FavoritesPage() {
         loading={false}
         emptyMessage="还没有喜欢的图片"
         emptyHint="去生成一张并点击 👍 收藏吧"
+        onDelete={handleDelete}
       />
     </div>
   );

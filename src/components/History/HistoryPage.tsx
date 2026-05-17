@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { ImageResult } from '@/providers/IImageProvider';
 import { persistenceStore } from '@/store/persistenceStore';
 import ImageGrid from '@/components/ImageGrid/ImageGrid';
@@ -29,6 +29,14 @@ export default function HistoryPage() {
   const refresh = () => {
     setResults(persistenceStore.load());
   };
+
+  const handleDelete = useCallback((deleted: ImageResult) => {
+    setResults((prev) =>
+      prev.filter(
+        (r) => r.url !== deleted.url || r.metadata.generatedAt !== deleted.metadata.generatedAt,
+      ),
+    );
+  }, []);
 
   const btnStyle = "text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 transition-colors";
 
@@ -64,6 +72,7 @@ export default function HistoryPage() {
         loading={false}
         emptyMessage="暂无历史记录"
         emptyHint="生成图像后将自动保存在这里"
+        onDelete={handleDelete}
       />
     </div>
   );

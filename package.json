@@ -67,7 +67,10 @@
     },
     "files": [
       "dist/**/*",
-      "dist-electron/**/*"
+      "dist-electron/**/*",
+      "!config/**/*",
+      "!**/*.map",
+      "!**/node_modules/.cache/**"
     ],
     "mac": {
       "target": "dmg"

@@ -329,13 +329,13 @@ async function handleGenerate(params: GenerateParams): Promise<Record<string, un
 
   const config = loadConfig();
   if (!config) {
-    throw new Error('未找到配置文件 config/local.json');
+    throw new Error('尚未配置 API Key，请前往「API 配置」页面添加模型服务密钥');
   }
 
   const providerConfig = config.providers[providerId];
 
   if (!providerConfig?.apiKey) {
-    throw new Error(`模型服务 "${providerId}" 未配置 API Key`);
+    throw new Error(`「${providerId}」尚未配置 API Key，请前往「API 配置」页面添加`);
   }
 
   const modelId = (params.options?.model as string) ?? undefined;

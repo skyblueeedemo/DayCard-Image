@@ -10,6 +10,20 @@
 
 ---
 
+## [dev1.3.1] - 2026-05-17
+
+> Bug 修复批次 1：打包隔离 + 错误提示 + 排序同步 + 模型校验 + 删除实时刷新 — 0 个新文件，7 个修改文件
+
+### Fixed
+
+- **打包文件隔离**：`package.json` `build.files` 新增 `!config/**/*`、`!**/*.map` 排除规则，`config/local.json`（含 API Key）不再被打包进安装包
+- **无 API Key 错误提示**：`handleGenerate` 两处错误文案由技术路径信息改为引导性操作提示（「请前往「API 配置」页面添加模型服务密钥」）
+- **模型选择器初始顺序**：`ProviderSelector` 初始化时即读取 `loadOrder()` / `loadModelOrder()`，不再需要先打开 API 配置页才能同步排序；`activeProviderId` 为空时自动按用户排序选中第一个可用 Provider
+- **阿里云未选模型拦截**：`generationStore.generate()` / `retryGenerate()` 新增前置校验，阿里云且 `activeModelId` 为空时直接报错不发起 API 请求；`ProviderSelector` 切换到阿里云时自动选中排序第一个模型
+- **历史记录 / 收藏删除实时刷新**：`ImageCard` 新增 `onDelete` prop，`ImageGrid` 透传，`HistoryPage` / `FavoritesPage` 收到回调后立即从本地 state 移除，无需手动点刷新
+
+---
+
 ## [dev1.3.0] - 2026-05-16
 
 > 优化阶段 2：主题扩展 + 收藏 + 外观主题 + 壁纸删除 + 重构合并 — 6 个新文件，35 个修改文件

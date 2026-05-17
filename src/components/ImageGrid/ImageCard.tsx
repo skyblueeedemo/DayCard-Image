@@ -7,6 +7,7 @@ import { buildDailyPrompt } from '@/utils/promptEngine';
 
 interface ImageCardProps {
   result: ImageResult;
+  onDelete?: (result: ImageResult) => void;
 }
 
 const providerColors: Record<string, string> = {
@@ -35,7 +36,7 @@ function setSkipConfirm(skip: boolean): void {
   }
 }
 
-export default function ImageCard({ result }: ImageCardProps) {
+export default function ImageCard({ result, onDelete }: ImageCardProps) {
   const retryGenerate = useGenerationStore((s) => s.retryGenerate);
   const removeResult = useGenerationStore((s) => s.removeResult);
   const isGenerating = useGenerationStore((s) => s.isGenerating);
@@ -121,6 +122,9 @@ export default function ImageCard({ result }: ImageCardProps) {
 
       // 从 generationStore 中移除（实时刷新 ImageGrid）
       removeResult(result);
+
+      // 通知父组件（历史页/收藏页）实时更新列表
+      onDelete?.(result);
 
       showToast('已删除');
     } catch {

@@ -27,7 +27,9 @@ export default function ProviderSelector() {
   const refresh = useCallback(async () => {
     const list = providerManager.listProviders();
     setProviders(list);
-    setProviderOrder(loadOrder());
+    // 每次刷新时重新读取排序，确保与 API 配置页同步
+    const order = loadOrder();
+    setProviderOrder(order);
 
     if (window.electronAPI?.getConfig) {
       try {
@@ -65,6 +67,7 @@ export default function ProviderSelector() {
         const providers = (data.providers ?? data) as Record<string, { models?: Record<string, ModelEntry> }> | undefined;
         if (providers?.aliyun?.models) {
           setModels(providers.aliyun.models);
+          // 每次加载时重新读取模型排序，确保与 API 配置页同步
           setModelOrder(loadModelOrder('aliyun'));
         }
       }
@@ -76,7 +79,53 @@ export default function ProviderSelector() {
   useEffect(() => {
     refresh();
     loadModels();
+    // 初始化时同步读取模型排序（不依赖 loadModels 的异步结果）
+    setModelOrder(loadModelOrder('aliyun'));
   }, [refresh, loadModels]);
+
+  // 初始化完成后，若 activeProviderId 为空，自动选中排序第一个可用的 Provider
+  useEffect(() => {
+    if (activeProviderId) return;
+    if (providers.length === 0) return;
+
+    const order = loadOrder();
+    let sorted = providers;
+    if (order.length > 0) {
+      const indexMap = new Map(order.map((id, i) => [id, i]));
+      sorted = [...providers].sort((a, b) => {
+        const ai = indexMap.get(a.id) ?? 999;
+        const bi = indexMap.get(b.id) ?? 999;
+        return ai - bi;
+      });
+    }
+
+    // 优先选第一个可用的（有 key 或 mock），否则选第一个
+    const first = sorted.find((p) => availability[p.id] || p.id === 'mock') ?? sorted[0];
+    if (first) {
+      setActiveProvider(first.id);
+    }
+  }, [providers, availability, activeProviderId, setActiveProvider]);
+
+  // 切换到阿里云且有模型列表时，若未选模型则自动选排序第一个
+  useEffect(() => {
+    if (activeProviderId !== 'aliyun') return;
+    if (activeModelId) return;
+    const modelKeys = Object.keys(models);
+    if (modelKeys.length === 0) return;
+
+    const order = loadModelOrder('aliyun');
+    const sorted = order.length > 0
+      ? [...modelKeys].sort((a, b) => {
+          const ai = order.indexOf(a);
+          const bi = order.indexOf(b);
+          return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+        })
+      : modelKeys;
+
+    if (sorted[0]) {
+      setActiveModel(sorted[0]);
+    }
+  }, [activeProviderId, activeModelId, models, setActiveModel]);
 
   const sortedProviders = (() => {
     if (providerOrder.length === 0) return providers;

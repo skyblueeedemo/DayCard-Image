@@ -7,6 +7,7 @@ interface ImageGridProps {
   loading?: boolean;
   emptyMessage?: string;
   emptyHint?: string;
+  onDelete?: (result: ImageResult) => void;
 }
 
 export default function ImageGrid({
@@ -14,6 +15,7 @@ export default function ImageGrid({
   loading: externalLoading,
   emptyMessage = '尚未生成任何图像',
   emptyHint = '输入 Prompt 开始创作',
+  onDelete,
 }: ImageGridProps) {
   const storeResults = useGenerationStore((s) => s.results);
   const storeLoading = useGenerationStore((s) => s.isGenerating);
@@ -50,7 +52,7 @@ export default function ImageGrid({
           </div>
         )}
         {results.map((result, index) => (
-          <ImageCard key={`${result.metadata.generatedAt}-${index}`} result={result} />
+          <ImageCard key={`${result.metadata.generatedAt}-${index}`} result={result} onDelete={onDelete} />
         ))}
       </div>
     </div>

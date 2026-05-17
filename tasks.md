@@ -1093,3 +1093,101 @@
 - ⚠️ Tailwind config 在 CJS 项目必须用 `module.exports`
 - ⚠️ electron-updater 在线升级待后续接入
 - **结论**：优化阶段 2 已交付，项目进度 dev1.3.0
+
+---
+
+## Bug 修复批次 1：打包隔离 + 错误提示 + 排序同步 + 模型校验 + 删除实时刷新
+
+**阶段目标**：修复用户反馈的 5 个生产 Bug，提升使用体验与数据一致性。
+
+**范围**：
+- 打包时 `config/local.json` 隔离（排除敏感文件）
+- 无 API Key 时错误提示改为引导性文案
+- 今日抽卡页模型选择器初始顺序与 API 配置页同步
+- 阿里云未选模型时拦截生成并提示
+- 历史记录 / 我的收藏删除后实时刷新，无需手动点刷新
+
+**验收条件**：
+- [x] 打包产物不含 `config/local.json`、`.map` 文件
+- [x] 未配置 API Key 时点击生成，提示「请前往 API 配置页面添加」
+- [x] 今日抽卡页模型选择器初始顺序与 API 配置页一致，无需先打开 API 配置页
+- [x] 选择阿里云未选模型时，点击生成弹出错误提示，不发起 API 请求
+- [x] 历史记录 / 我的收藏删除图片后列表立即更新，无需手动刷新
+- [x] `npm run type-check` 0 errors
+
+---
+
+### 任务记录
+
+### T-B101: 打包文件隔离
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：确保 `config/local.json`（含 API Key）及 source map 不被打包进 exe
+- **涉及文件**：
+  - `package.json`（修改 — `build.files` 新增 `!config/**/*`、`!**/*.map`、`!**/node_modules/.cache/**` 排除规则）
+- **变更摘要**：electron-builder `files` 字段由 2 条扩展为 5 条，明确排除敏感目录和调试文件
+
+### T-B102: 无 API Key 错误提示优化
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：将技术性错误信息替换为引导用户操作的友好提示
+- **涉及文件**：
+  - `electron/ipc/imageGeneration.ts`（修改 — `handleGenerate` 两处错误文案）
+- **变更摘要**：
+  - `loadConfig()` 返回 null：`'未找到配置文件 config/local.json'` → `'尚未配置 API Key，请前往「API 配置」页面添加模型服务密钥'`
+  - API Key 为空：`'模型服务 "xxx" 未配置 API Key'` → `'「xxx」尚未配置 API Key，请前往「API 配置」页面添加'`
+
+### T-B103: 模型选择器初始顺序同步
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：今日抽卡页 ProviderSelector 初始化时即按用户排序显示，不再需要先打开 API 配置页触发一次
+- **涉及文件**：
+  - `src/components/ProviderSelector/ProviderSelector.tsx`（修改）
+- **变更摘要**：
+  - `refresh()` 每次调用时重新读取 `loadOrder()`，打开下拉即同步
+  - `loadModels()` 每次调用时重新读取 `loadModelOrder('aliyun')`
+  - `useEffect` 初始化时同步读取 `loadModelOrder('aliyun')`，不依赖异步结果
+  - 新增 `useEffect`：`activeProviderId` 为空时，按用户排序自动选中第一个可用 Provider
+
+### T-B104: 阿里云未选模型拦截
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：选择阿里云但未选模型时，阻止生成并给出明确提示
+- **涉及文件**：
+  - `src/components/ProviderSelector/ProviderSelector.tsx`（修改 — 新增自动选模型 useEffect）
+  - `src/store/generationStore.ts`（修改 — `generate` / `retryGenerate` 前置校验）
+- **变更摘要**：
+  - `ProviderSelector`：切换到阿里云且有模型列表时，若 `activeModelId` 为空，自动按排序选中第一个模型（正常路径无感知）
+  - `generationStore.generate()`：`activeProviderId === 'aliyun' && !activeModelId` 时，`set({ error: '请先在模型选择器中选择一个模型' })` 并 return，不发起 IPC 请求
+  - `generationStore.retryGenerate()`：同上
+
+### T-B105: 历史记录 / 收藏删除实时刷新
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：删除图片后列表立即更新，无需手动点刷新按钮
+- **涉及文件**：
+  - `src/components/ImageGrid/ImageCard.tsx`（修改 — 新增 `onDelete` prop，`executeDelete` 成功后调用）
+  - `src/components/ImageGrid/ImageGrid.tsx`（修改 — 新增 `onDelete` prop，透传给 `ImageCard`）
+  - `src/components/History/HistoryPage.tsx`（修改 — 传入 `handleDelete` 回调，收到通知后从本地 state 移除）
+  - `src/components/Favorites/FavoritesPage.tsx`（修改 — 传入 `handleDelete` 回调，收到通知后从本地 state 移除）
+- **变更摘要**：
+  - `ImageCard` 新增 `onDelete?: (result: ImageResult) => void` prop
+  - `executeDelete` 成功后调用 `onDelete?.(result)`
+  - `ImageGrid` 透传 `onDelete` 给每个 `ImageCard`
+  - `HistoryPage` / `FavoritesPage` 各自实现 `handleDelete`，用 `setResults(prev => prev.filter(...))` 实时移除，不再依赖手动刷新
+
+---
+
+**Bug 修复批次 1 回顾**（2026-05-17）：
+- ✅ 5 个 Bug 全部修复，0 个新文件，7 个修改文件
+- ✅ 打包隔离：`config/local.json` 明确排除，API Key 不再泄露到安装包
+- ✅ 错误提示：技术路径信息替换为引导性操作文案
+- ✅ 排序同步：ProviderSelector 初始化即读取用户排序，自动选中第一个可用 Provider
+- ✅ 模型校验：阿里云未选模型时前端拦截，不消耗 API 配额；同时自动选模型减少用户操作
+- ✅ 实时刷新：`onDelete` 回调链路打通，历史记录 / 收藏删除即时生效
+- ✅ `npm run type-check` 0 errors
