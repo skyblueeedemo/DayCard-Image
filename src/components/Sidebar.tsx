@@ -53,7 +53,7 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
             <span className="truncate">{providerMeta.label}</span>
           </div>
         )}
-        <span className="text-xs text-fg-muted">拾光匣 v1.4.0</span>
+        <span className="text-xs text-fg-muted">拾光匣 v1.4.1</span>
       </div>
     </aside>
   );

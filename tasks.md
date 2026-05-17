@@ -1543,3 +1543,79 @@
 - ⚠️ 4.4 自动更新 UI（按 D-4.1=A 决策跳过；现状是 toast 提示降级）
 - ⚠️ 4.5 README 截图（按 D-4.2=A 决策由用户自补；目前 README 文字描述够用）
 - **结论**：v1.4.0 已发版，改进计划全部落地；后续日常迭代走 dev/main 双线工作流
+
+
+---
+
+## 优化阶段 6：自动更新功能恢复（v1.4.1）
+
+**阶段目标**：把 v1.4.0 的「检查更新 toast 降级提示」恢复为完整 electron-updater 集成，配合首次正式发版（v1.4.1 GitHub Release）建立可工作的自动更新链路。
+
+**范围**：
+- 填 package.json publish.owner/repo 占位符
+- Settings.tsx「检查更新」按钮恢复真实调用 + 状态机 UI
+- 升版到 v1.4.1（patch 升级）
+- README 增加自动更新章节
+- 首次创建 GitHub Release（用户在本地完成）
+
+**验收条件**：
+- [x] package.json publish 字段指向真实仓库
+- [x] 设置页关于区按钮真实调 IPC，按状态显示 7 种 UI
+- [x] 用户决定下载 + 二次确认重启（D-AU.1=A, D-AU.3=B）
+- [x] `npm test` 54/54，`npm run type-check` 0 errors
+- [ ] `npm run build:electron` 打包成功（用户本地验证）
+- [ ] GitHub Release v1.4.1 已创建并附产物（用户本地完成）
+
+---
+
+### 任务记录
+
+### T-501: 填 package.json publish 占位符
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：替换 `<your-github-username>` / `<your-repo-name>` 为实际值
+- **涉及文件**：`package.json`
+- **Commit**：`7eb79b7 chore: 填写 publish.owner/repo 指向 GitHub 仓库`
+
+### T-502: Settings 检查更新状态机
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：替换 toast 降级为真实 7 状态机 UI
+- **涉及文件**：`src/components/Settings/Settings.tsx`
+- **变更摘要**：
+  - 删除原 toast 提示（"暂不支持在线升级..."）
+  - 新增 updateStatus / updateInfo / updateError 三个 state
+  - useEffect 订阅 update:available / not-available / downloaded / error 四个 IPC 事件
+  - handleCheckUpdate / handleDownloadUpdate / handleInstallUpdate 三个 handler
+  - 7 种状态分别渲染：检查按钮 / spinner / 新版提示+下载按钮 / 下载中 / 下载完成+重启按钮 / 已是最新 toast / 错误显示
+  - installUpdate 前 window.confirm 二次确认（D-AU.3=B）
+- **Commit**：`a960843 feat: Settings 恢复真实检查更新 UI（含状态机）`
+
+### T-503: 文档同步 + 升版 v1.4.1
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：升级版本号 + 文档同步
+- **涉及文件**：`package.json`、`Sidebar.tsx`、`Settings.tsx`（v1.4.0 → v1.4.1）、`README.md`、`CHANGELOG.md`、`DayCard-Image拾光匣开发文档.md`、`tasks.md`
+- **变更摘要**：
+  - package.json version 1.4.0 → 1.4.1
+  - UI 三处版本号同步
+  - README 新增「自动更新」章节 + 版本路线图增 v1.4.1 行
+  - CHANGELOG 新增 [1.4.1] 节点（Added / Changed / Fixed）
+  - 开发文档版本路线图 + 顶部状态字段同步
+  - tasks.md 新增本阶段记录
+
+---
+
+**优化阶段 6 回顾**（2026-05-17）：
+- ✅ 3 个任务全部完成，3 个 commit（T-501 / T-502 / T-503）
+- ✅ electron-updater 现在能正确指向 https://github.com/skyblueeedemo/DayCard-Image/releases/latest/download/latest.yml
+- ✅ 用户体验：手动检查更新（idle → checking → available/not-available/error）、下载（available → downloading → downloaded）、重启安装（downloaded → confirm → install）三段完整闭环
+- ✅ 仅 packaged 应用生效（UpdateService 已有 app.isPackaged 守卫），开发模式不打扰
+- ✅ 测试 54/54 不变，type-check + lint 0 errors
+- ⚠️ v1.4.0 用户拿到的是 toast 降级版，无法自动检测到 v1.4.1（需要手动下载安装）
+- ⚠️ 从 v1.4.1 起所有用户都能享受自动更新链路
+- ⚠️ 实际更新链路需要用户在本机：① `npm run build:electron`，② 在 GitHub 创建 v1.4.1 Release 并上传 `release/` 中所有产物（含 latest.yml metadata）
+- **结论**：v1.4.1 代码层已准备好，等待发版上传 Release

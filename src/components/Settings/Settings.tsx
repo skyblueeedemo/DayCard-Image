@@ -230,7 +230,7 @@ export default function Settings() {
         <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">关于</h3>
           <div className="text-sm text-gray-500 dark:text-gray-400 flex flex-col gap-2">
-            <p>拾光匣 DayCard-Image v1.4.0</p>
+            <p>拾光匣 DayCard-Image v1.4.1</p>
             <p>日更壁纸 · 拾光成匣</p>
             <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">Electron + React + TypeScript + TailwindCSS</p>
 

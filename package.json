@@ -1,6 +1,6 @@
 {
   "name": "daycard-image",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "拾光匣 - 日更壁纸 · 拾光成匣",
   "main": "dist-electron/main.js",
   "author": "DayCard-Image Team",

@@ -10,6 +10,29 @@
 
 ---
 
+## [1.4.1] - 2026-05-17
+
+> 自动更新功能恢复 — 1 个新文件，2 个修改文件
+
+### Added
+
+- **自动更新功能**：从 v1.4.0 的 toast 降级提示恢复为完整 electron-updater 集成
+  - 启动后 5 秒静默检查 GitHub Releases
+  - 检测到新版本后弹出提示，用户决定下载（不自动下载）
+  - 下载完成后用户决定重启安装（二次确认）
+  - 设置页关于区状态机 UI：idle / checking / available / not-available / downloading / downloaded / error 七态
+  - 仅 `app.isPackaged` 时生效，开发模式跳过
+
+### Changed
+
+- **package.json publish**：`<your-github-username>` / `<your-repo-name>` 占位符替换为 `skyblueeedemo` / `DayCard-Image`，electron-updater 现在能正确从 GitHub Releases 拉取 `latest.yml`
+
+### Fixed
+
+- 用户反馈「检查更新只弹 toast 不真检查」回归问题
+
+---
+
 ## [1.4.0] - 2026-05-17
 
 > 阶段一~四统一发版：基础重构 + API 能力升级 + UI/UX 全面升级 + 打磨发布 — 共 53 个 commit

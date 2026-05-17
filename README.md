@@ -159,9 +159,28 @@ Key 仅存储在本地用户数据目录（`%APPDATA%/daycard-image/config.json`
 
 ---
 
+## 自动更新
+
+应用从 v1.4.1 起接入 [electron-updater](https://www.electron.build/auto-update)，自动从 GitHub Releases 拉取新版本。
+
+- **静默检查**：每次启动应用 5 秒后在后台检查 GitHub `latest.yml`
+- **用户决定下载**：检测到新版本后弹出提示，用户可选择「立即下载」或「稍后再说」
+- **二次确认重启**：下载完成后点击「立即重启更新」会询问一次，避免误操作
+- **手动检查**：设置页 → 关于 → 检查更新
+
+> 仅 packaged 应用（`npm run build:electron` 产物）才检查更新，开发模式 `npm run dev:electron` 跳过。
+
+发版流程：
+1. 在 main 分支打 tag（如 `v1.4.1`）
+2. 在本机跑 `npm run build:electron` 生成 `release/`
+3. 在 [GitHub Releases](https://github.com/skyblueeedemo/DayCard-Image/releases) 创建对应 tag 的 Release，上传 `release/` 中所有 `.exe / .dmg / .AppImage / latest*.yml` 文件
+4. 已安装应用启动时会自动检测到新版本
+
+---
+
 ## 版本
 
-当前版本：**v1.4.0**（2026-05-17）
+当前版本：**v1.4.1**（2026-05-17）
 
 | 版本 | 状态 | 核心特性 |
 |------|------|---------|
@@ -172,7 +191,8 @@ Key 仅存储在本地用户数据目录（`%APPDATA%/daycard-image/config.json`
 | v1.2.1 | ✅ | DashScope 8 模型 + API 配置页面 + 壁纸修复 + 持久化双写 |
 | dev1.3.0 | ✅ | 主题扩展（每日 3 组）+ 收藏 + 双主题外观 + 壁纸删除 + 启动页 |
 | dev1.3.1 | ✅ | Bug 修复批次 1：打包隔离、错误提示、排序同步、模型校验、删除实时刷新 |
-| **v1.4.0** | ✅ **当前** | 阶段一~四统一发版：基础重构、API 能力升级、UI/UX 全面升级、打磨发布 |
+| v1.4.0 | ✅ | 阶段一~四统一发版：基础重构、API 能力升级、UI/UX 全面升级、打磨发布 |
+| **v1.4.1** | ✅ **当前** | 自动更新功能恢复（electron-updater 接通 GitHub Releases） |
 
 完整变更历史见 [CHANGELOG.md](./CHANGELOG.md)，未来路线图见 [DayCard-Image改进计划.md](./DayCard-Image改进计划.md)。
 
