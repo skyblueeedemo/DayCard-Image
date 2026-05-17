@@ -25,6 +25,12 @@ Thumbs.db
 *.swp
 *.swo
 
+# AI assistant tooling (Kiro / Claude / Cursor / Gemini local caches)
+.claude/
+.cursor/
+.gemini/
+.kiro/
+
 # Logs
 *.log
 npm-debug.log*
