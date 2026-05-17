@@ -21,7 +21,7 @@ function ToggleSwitch({
         onClick={() => onChange(!enabled)}
         disabled={disabled}
         className={`relative w-11 h-6 rounded-full transition-colors overflow-hidden ${
-          enabled ? 'bg-brand dark:bg-neutral-500' : 'bg-gray-300 dark:bg-gray-600'
+          enabled ? 'bg-neutral-500' : 'bg-gray-300 dark:bg-gray-600'
         } disabled:opacity-50`}
       >
         <span
