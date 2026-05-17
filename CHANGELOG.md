@@ -32,10 +32,26 @@
 - **DailyTheme.hasStarted**：storage 完全不可用时由「假装已开始」改为「显示首次使用引导」，行为更一致
 - **3 个 Provider 类**：StabilityProvider / ZhipuProvider / AliyunProvider 把硬编码 URL 提到 `config.baseURL ?? default`；阿里云原 BASE_URL 拆为 DEFAULT_BASE_URL + TASK_PATH
 - **3 个主进程 handler**：handleStability / handleZhipu / handleAliyun 同样改用 `config.baseURL ?? default`，handleStability + handleZhipu 同时尊重 `options.model` 覆盖
+- **设计 Token 体系**：20 个组件中所有 `blue-*` 散落引用替换为 `bg-brand` / `text-brand` / `border-brand` 等语义化 token
+- **Sidebar 激活态**：右侧 border-r-2 → 左侧 3px 圆角竖线 + surface-2 背景
+- **Sidebar 底部**：新增当前 Provider 状态指示（绿点 + label）
+- **ImageCard Provider 标签**：底部色块 → 右上角半透明胶囊（backdrop-blur-sm bg-black/40）
+- **ImageCard 卡片圆角**：rounded-lg → rounded-2xl
+- **ImageGrid 骨架屏**：SVG spinner → 磨砂玻璃卡片 + CSS border 旋转环
+- **Toast**：新增状态图标（CheckCircle2 / XCircle / Info）+ 关闭按钮改 lucide X + 滑入动画
+- **ToggleSwitch 开启态**：亮暗色统一 neutral-500（修复暗色模式白色轨道与白色小球对比度不足）
+- **品牌色**：亮色模式 neutral-900 → neutral-700（按钮调浅更柔和）
+- **全局 emoji → lucide-react**：Sidebar / ImageCard / Settings / 排序按钮 / 空状态 / Toast 全部替换为 SVG 图标
+- **页面切换动画**：animate-page-in（opacity + translateY 150ms）
+- **Toast 动画**：animate-toast-in（opacity + translateY 200ms）
 
 ### Fixed
 
 - **MockProvider 测试 10% 概率失败**：用 `Math.random = mockFn` 注入确定性 stub，并新增一条强制失败路径测试覆盖错误消息（用例数 6 → 7）
+
+### Dependencies
+
+- 新增: `lucide-react ^1.16.0`（SVG 图标库，tree-shakable，替代 emoji）
 
 ---
 
