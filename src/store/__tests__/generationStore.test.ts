@@ -129,7 +129,8 @@ describe('generationStore', () => {
       });
 
       await useGenerationStore.getState().retryGenerate('retry prompt');
-      expect(mockGenerate).toHaveBeenCalledWith('retry prompt');
+      // 阶段二 T-207：generate 现在透传 options.model（默认为空对象，因为 store 里 activeModelId 是 null）
+      expect(mockGenerate).toHaveBeenCalledWith('retry prompt', {});
       expect(useGenerationStore.getState().results).toHaveLength(1);
     });
 

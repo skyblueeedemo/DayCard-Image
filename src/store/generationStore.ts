@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ImageResult } from '@/providers/IImageProvider';
+import type { ImageResult, GenerateOptions } from '@/providers/IImageProvider';
 import { providerManager } from '@/providers/ProviderManager';
 import { persistenceStore } from './persistenceStore';
 
@@ -66,8 +66,10 @@ async function doGenerate(
       }
       result = data.data;
     } else {
-      // Web 模式：通过 ProviderManager
-      result = await providerManager.generate(promptText);
+      // Web 模式：通过 ProviderManager（同样透传 model）
+      const options: GenerateOptions = {};
+      if (activeModelId) options.model = activeModelId;
+      result = await providerManager.generate(promptText, options);
     }
 
     const updated = persistenceStore.addResult(result);
