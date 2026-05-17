@@ -1,5 +1,7 @@
-import { Camera } from 'lucide-react';
+import { Camera, Circle } from 'lucide-react';
 import { ROUTES, type RouteId } from '@/router/routes';
+import { useGenerationStore } from '@/store/generationStore';
+import { getProviderMeta } from '@/providers/registry';
 
 interface SidebarProps {
   activePage: RouteId;
@@ -7,6 +9,9 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
+  const activeProviderId = useGenerationStore((s) => s.activeProviderId);
+  const providerMeta = activeProviderId ? getProviderMeta(activeProviderId) : null;
+
   return (
     <aside className="w-56 bg-gray-100 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col select-none">
       {/* Logo */}
@@ -24,12 +29,15 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className={`w-full flex items-center gap-3 px-5 py-3 text-sm transition-colors ${
+              className={`relative w-full flex items-center gap-3 px-5 py-3 text-sm transition-colors ${
                 isActive
-                  ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white border-r-2 border-brand'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-800/50'
+                  ? 'bg-surface-2 text-fg-primary'
+                  : 'text-fg-secondary hover:text-fg-primary hover:bg-surface-2/60'
               }`}
             >
+              {isActive && (
+                <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-brand" aria-hidden />
+              )}
               <Icon size={16} strokeWidth={1.75} />
               {item.label}
             </button>
@@ -38,8 +46,14 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-400 dark:text-gray-500">
-        拾光匣 dev1.3.1
+      <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-1.5">
+        {providerMeta && (
+          <div className="flex items-center gap-2 text-xs text-fg-secondary">
+            <Circle size={8} className="fill-green-500 text-green-500" />
+            <span className="truncate">{providerMeta.label}</span>
+          </div>
+        )}
+        <span className="text-xs text-fg-muted">拾光匣 dev1.3.1</span>
       </div>
     </aside>
   );
