@@ -8,6 +8,34 @@
 
 > 以下内容为开发中功能，发布时移入对应版本节点。
 
+---
+
+## [1.4.0] - 2026-05-17
+
+> 阶段一~四统一发版：基础重构 + API 能力升级 + UI/UX 全面升级 + 打磨发布 — 共 53 个 commit
+
+### Added (阶段四)
+
+- **键盘快捷键扩展**：Ctrl/Cmd + ,（跳转设置）+ Ctrl/Cmd + 1~6（按 ROUTES 顺序切换页面）；通过自定义事件 `daycard:navigate` 解耦
+- **ErrorBoundary 增强**：错误概要卡片始终显示（错误名 + 时间戳 + 消息）；新增「报告问题」按钮跳转 GitHub Issues 自动填充错误信息
+- **dev/main 双分支工作流**：日常 commit 推 `dev`，稳定快照合并到 `main` 并打 tag 发版
+
+### Changed (阶段四)
+
+- **页面切换跳转**：原"navigate-to" Electron 事件 + Sidebar 点击切换的两条路径，现新增第三条「键盘快捷键」路径，全部通过 `daycard:navigate` 自定义事件汇聚到 App.tsx 单点 setActivePage
+- **ErrorBoundary 视觉升级**：emoji ⚠ → lucide AlertTriangle；硬编码 bg-gray-950 → surface-1 token；按钮新增 RotateCcw / ExternalLink 图标
+- **package.json 版本号**：`1.3.1-dev` → `1.4.0`；UI（Sidebar 底栏 + Settings 关于）同步显示 `v1.4.0`
+
+### Performance (阶段四)
+
+- **ImageCard React.memo**：用 memo 包裹避免历史记录页 / 收藏页 50+ 卡片场景下父组件状态变化触发全量子组件重渲
+- **ProviderSelector refresh debounce**：300ms 内多次开合下拉合并为一次 IPC 调用，避免 IPC 拥堵 + HTTP 浪费
+- **主进程 loadConfig 5 秒缓存**：连续生成时复用 config.json 解析结果；config:set / config:set-order 在写入后调 invalidateConfigCache 失效缓存
+
+---
+
+> 以下内容来自阶段一/二/三 [Unreleased] 累积，统一发布到 v1.4.0：
+
 ### Added
 
 - **storageAdapter 统一存储层**：`src/store/storageAdapter.ts` 封装 localStorage 读写，提供 `getJSON/setJSON/getString/setString/remove/has` 六个方法 + 13 条单元测试覆盖（含环境不可用 / JSON 异常 / quota 抛错三类边界）

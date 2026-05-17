@@ -1440,3 +1440,106 @@
 - ✅ 决策项落地：D-2.1=A（storageAdapter 10 分钟缓存）/ D-2.2=B（diff 补缺保留 remaining）/ D-2.3=A（写测试）/ D-2.4=B（物理删除空字段）
 - ⚠️ 不打 tag（按你 2026-05-17 的决策），等阶段三/四凑齐再统一发版
 - **结论**：阶段二 API 能力升级已交付；codebase 准备好承接阶段三 UI/UX 升级
+
+
+---
+
+## 优化阶段 5：打磨发布（v1.4.0）
+
+**阶段目标**：阶段四改进计划落地——快捷键扩展、错误边界增强、性能优化、版本统一发版。同时建立 dev/main 双分支工作流。
+
+**范围**：
+- useKeyboardShortcuts 扩展：Ctrl/Cmd + ,（设置）+ Ctrl/Cmd + 1~6（切页）
+- ErrorBoundary 视觉升级 + GitHub Issues 报告问题入口
+- ImageCard React.memo 化
+- ProviderSelector refresh 加 300ms debounce
+- 主进程 loadConfig 加 5 秒缓存
+- dev/main 双分支：日常开发推 dev，稳定快照合并到 main 打 tag
+- 阶段一~四统一发版到 v1.4.0
+
+**验收条件**：
+- [x] Ctrl/Cmd + 数字 / 逗号能切页面
+- [x] ErrorBoundary 显示错误概要 + 报告问题按钮跳转 GitHub
+- [x] ImageCard 用 memo 包裹
+- [x] ProviderSelector 高频开合下拉只触发一次 IPC
+- [x] config 修改后下次生成立即读到新值（cache 失效）
+- [x] dev 分支已建立并推到远程
+- [x] package.json + UI 升至 v1.4.0
+- [x] `npm test` 54/54，`npm run type-check` 0 errors
+
+---
+
+### 任务记录
+
+### T-401: 键盘快捷键扩展
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：新增 Cmd+, 跳设置 + Cmd+1~6 切页
+- **涉及文件**：`useKeyboardShortcuts.ts`、`App.tsx`
+- **变更摘要**：通过 `daycard:navigate` 自定义事件解耦
+- **Commit**：`d452662 feat: 键盘快捷键扩展 Cmd+,（设置）+ Cmd+数字（切页）`
+
+### T-402: ErrorBoundary 视觉升级
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：错误概要 + 报告问题入口
+- **涉及文件**：`ErrorBoundary.tsx`
+- **变更摘要**：emoji → AlertTriangle；新增 GitHub Issues 跳转，自动填充错误信息
+- **Commit**：`7aaba9c feat: ErrorBoundary 视觉升级 + 报告问题入口`
+
+### T-403: ImageCard React.memo
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：避免列表场景全量重渲
+- **涉及文件**：`ImageCard.tsx`
+- **Commit**：`ef26e9c perf: ImageCard 用 React.memo 避免不必要重渲`
+
+### T-404: ProviderSelector debounce
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：300ms 内合并多次开合下拉的 IPC 调用
+- **涉及文件**：`ProviderSelector.tsx`
+- **变更摘要**：useRef 持有 setTimeout id，组件卸载时清理
+- **Commit**：`933f044 perf: ProviderSelector refresh 加 300ms debounce`
+
+### T-405: loadConfig 5 秒缓存
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：避免连续生成时重复读 config.json
+- **涉及文件**：`electron/ipc/imageGeneration.ts`、`electron/ipc/config.ts`
+- **变更摘要**：模块级 configCache + invalidateConfigCache 暴露给 config:set/set-order 调用
+- **Commit**：`f244563 perf: 主进程 loadConfig 加 5 秒缓存避免重复读盘`
+
+### T-406: dev/main 双分支工作流
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：日常开发与稳定发布分线
+- **变更摘要**：基于当前 main 5e81ecb 创建 dev 分支并推到远程；阶段四 commit 全部在 dev 上完成
+- **Commit**：（无独立 commit，纯 git 操作）
+
+### T-407: 升版 v1.4.0 + 文档同步（本任务）
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：阶段一~四统一发版
+- **涉及文件**：`package.json`、`Sidebar.tsx`、`Settings.tsx`、`README.md`、`CHANGELOG.md`、`tasks.md`、`DayCard-Image拾光匣开发文档.md`、`DayCard-Image改进计划.md`
+
+---
+
+**优化阶段 5 回顾**（2026-05-17）：
+- ✅ 7 个任务全部完成（5 个代码 commit + 1 个工作流变更 + 1 个发版收尾）
+- ✅ 键盘快捷键覆盖率扩大：Ctrl+Enter / Esc / Cmd+, / Cmd+1~6
+- ✅ 错误体验升级：错误概要 + 时间戳 + GitHub Issues 一键报告
+- ✅ 性能：ImageCard memo + Selector debounce + loadConfig cache
+- ✅ 工作流变更：从今往后日常 commit 推 dev，稳定快照合并到 main 打 tag
+- ✅ 阶段一~四改进计划全部交付，统一发版到 v1.4.0
+- ✅ 测试套件 54/54 全绿；type-check + lint 0 errors
+- ⚠️ 4.4 自动更新 UI（按 D-4.1=A 决策跳过；现状是 toast 提示降级）
+- ⚠️ 4.5 README 截图（按 D-4.2=A 决策由用户自补；目前 README 文字描述够用）
+- **结论**：v1.4.0 已发版，改进计划全部落地；后续日常迭代走 dev/main 双线工作流
