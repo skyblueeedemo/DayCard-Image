@@ -12,14 +12,6 @@ interface ImageCardProps {
   onDelete?: (result: ImageResult) => void;
 }
 
-const providerColors: Record<string, string> = {
-  mock: 'bg-purple-700 text-purple-200',
-  openai: 'bg-green-700 text-green-200',
-  stability: 'bg-yellow-700 text-yellow-200',
-  zhipu: 'bg-fg-secondary text-surface-0',
-  aliyun: 'bg-orange-700 text-orange-200',
-};
-
 const SKIP_CONFIRM_KEY = 'daycard-skip-delete-confirm';
 
 function shouldSkipConfirm(): boolean {
@@ -136,8 +128,6 @@ export default function ImageCard({ result, onDelete }: ImageCardProps) {
     executeDelete();
   };
 
-  const badgeClass = providerColors[result.provider] ?? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200';
-
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2000);
@@ -192,17 +182,26 @@ export default function ImageCard({ result, onDelete }: ImageCardProps) {
         </div>
       )}
 
-      <div className="aspect-square bg-gray-100 dark:bg-gray-900">
+      <div className="aspect-square bg-gray-100 dark:bg-gray-900 relative">
         <img
           src={result.url}
           alt={result.metadata.prompt}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover opacity-0 transition-opacity duration-300"
           loading="lazy"
+          onLoad={(e) => {
+            (e.target as HTMLImageElement).classList.replace('opacity-0', 'opacity-100');
+          }}
           onError={(e) => {
-            (e.target as HTMLImageElement).src =
+            const img = e.target as HTMLImageElement;
+            img.src =
               'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" fill="%23374151"><rect width="400" height="400"/><text x="200" y="210" text-anchor="middle" fill="%239ca3af" font-size="14">Load Failed</text></svg>';
+            img.classList.replace('opacity-0', 'opacity-100');
           }}
         />
+        {/* Provider 胶囊标签 — 右上角半透明 */}
+        <span className={`absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm bg-black/40 text-white`}>
+          {result.provider}
+        </span>
       </div>
 
       <div className="p-3 flex flex-col gap-2">
@@ -211,9 +210,6 @@ export default function ImageCard({ result, onDelete }: ImageCardProps) {
         </p>
 
         <div className="flex items-center justify-between">
-          <span className={`text-xs px-2 py-0.5 rounded-full ${badgeClass}`}>
-            {result.provider}
-          </span>
           <span className="text-xs text-gray-400 dark:text-gray-500">
             {new Date(result.metadata.generatedAt).toLocaleTimeString()}
           </span>
