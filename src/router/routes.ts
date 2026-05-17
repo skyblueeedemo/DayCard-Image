@@ -6,18 +6,26 @@
  * 2. 新增页面只需在此追加一条记录，App + Sidebar 自动同步
  * 3. 不引入 react-router（单页应用复杂度不需要）
  *
- * 扩展点：
- * - icon 字段当前为 emoji（与现有 Sidebar 行为一致），
- *   阶段三 UI 升级时可改为 lucide-react SVG 组件引用
+ * 阶段三 子阶段 3-B：icon 字段从 emoji 字符串迁移为 lucide-react 组件
  */
 
+import {
+  Sparkles,
+  Heart,
+  FolderOpen,
+  CalendarDays,
+  KeyRound,
+  Settings as SettingsIcon,
+  type LucideIcon,
+} from 'lucide-react';
+
 export const ROUTE_DEFINITIONS = [
-  { id: 'daily', label: '今日抽卡', icon: '🎴' },
-  { id: 'favorites', label: '我的收藏', icon: '❤' },
-  { id: 'history', label: '历史记录', icon: '📁' },
-  { id: 'theme-history', label: '主题回顾', icon: '📅' },
-  { id: 'api-config', label: 'API 配置', icon: '🔑' },
-  { id: 'settings', label: '设置', icon: '🔧' },
+  { id: 'daily', label: '今日抽卡', icon: Sparkles },
+  { id: 'favorites', label: '我的收藏', icon: Heart },
+  { id: 'history', label: '历史记录', icon: FolderOpen },
+  { id: 'theme-history', label: '主题回顾', icon: CalendarDays },
+  { id: 'api-config', label: 'API 配置', icon: KeyRound },
+  { id: 'settings', label: '设置', icon: SettingsIcon },
 ] as const;
 
 export type RouteId = typeof ROUTE_DEFINITIONS[number]['id'];
@@ -25,7 +33,7 @@ export type RouteId = typeof ROUTE_DEFINITIONS[number]['id'];
 export interface RouteMeta {
   id: RouteId;
   label: string;
-  icon: string;
+  icon: LucideIcon;
 }
 
 export const ROUTES: readonly RouteMeta[] = ROUTE_DEFINITIONS;
