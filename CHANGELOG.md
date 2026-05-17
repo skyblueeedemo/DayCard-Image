@@ -14,6 +14,14 @@
 - **Provider 注册表**：`src/providers/registry.ts` 集中管理 5 个 Provider 元数据（label / technicalName / priority / defaultModels / docsURL / defaultBaseURL），导出 `getProviderMeta` / `getVisibleProviders` / `getProviderLabels` / `getDefaultModels` 辅助函数
 - **路由表**：`src/router/routes.ts` 集中声明 6 个页面路由（id / label / icon），导出 `ROUTES` / `RouteId` / `isRouteId` / `DEFAULT_ROUTE`
 - **OpenAI Provider 配额持久化**：`OpenAIProvider.dailyUsed / lastResetDate` 通过 storageAdapter 写入 `daycard-quota-openai`，跨重启保留
+- **IImageProvider.listModels**：接口新增可选方法，5 个 Provider 全部实现（OpenAI/Stability 走 API，Zhipu/Aliyun 失败 fallback 静态列表，Mock 直接返回硬编码）
+- **GenerateOptions.model**：覆盖 Provider 默认模型，generationStore 在 Electron + Web 两条路径全部透传
+- **config:list-models IPC**：主进程拉取动态模型列表，按 Provider 调用对应 list 接口；renderer 用 storageAdapter 缓存 10 分钟
+- **testConnection 增强**：返回 `latencyMs` 延迟 + `errorCode`（HTTP_xxx / NETWORK / TIMEOUT / UNKNOWN_PROVIDER / UNKNOWN）；补全 stability / zhipu 探活路径（之前只支持 openai / aliyun）
+- **自定义 Base URL**：`ProviderConfig.baseURL` 字段持久化；空字符串视为"删除字段"恢复默认；在 generate / list-models / test-connection 三条链路全部生效；UI 提供折叠输入框
+- **从 API 同步模型**：ApiConfigPage 新增「从 API 同步」按钮，diff 合并到现有 config（新模型用注册表默认配额，已存在模型保留 remaining）
+- **当前选用模型高亮**：ApiConfigPage 模型行新增「· 当前选用」标记
+- **listModels 单元测试**：10 条测试覆盖 5 个 Provider × 成功 + 失败/fallback 路径
 
 ### Changed
 
@@ -22,6 +30,8 @@
 - **App.tsx + Sidebar**：删除字符串联合类型路由 + if-else 渲染 + navItems 硬编码，改用 ROUTES 声明式渲染 + RouteId 类型 + isRouteId 守卫
 - **generationStore**：提取 `doGenerate(promptText, get, set)` 私有函数，`generate()` 与 `retryGenerate(p)` 共享调用，消除阿里云模型校验等逻辑的重复
 - **DailyTheme.hasStarted**：storage 完全不可用时由「假装已开始」改为「显示首次使用引导」，行为更一致
+- **3 个 Provider 类**：StabilityProvider / ZhipuProvider / AliyunProvider 把硬编码 URL 提到 `config.baseURL ?? default`；阿里云原 BASE_URL 拆为 DEFAULT_BASE_URL + TASK_PATH
+- **3 个主进程 handler**：handleStability / handleZhipu / handleAliyun 同样改用 `config.baseURL ?? default`，handleStability + handleZhipu 同时尊重 `options.model` 覆盖
 
 ### Fixed
 

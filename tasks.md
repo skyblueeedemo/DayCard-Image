@@ -1320,3 +1320,123 @@
 - ✅ 改进计划阶段一 1.1～1.5 全部勾选完成
 - ⚠️ 决策项 D-1（B 选项）：阶段一基础重构对用户无感知，**不打 tag**，等改进计划阶段二完成再统一升版至 dev1.4.0
 - **结论**：阶段一基础重构已交付；codebase 准备好承接改进计划阶段二（API 能力升级：动态模型列表、Base URL 自定义、增强连接测试）
+
+
+---
+
+## 优化阶段 4：API 能力升级（动态模型 / Base URL / 增强测试）
+
+**阶段目标**：让模型列表动态可拉、API 端点可定制、连接测试有详细反馈，为代理 / 镜像 / 私有部署等生产场景兜底；不打 tag 不发版，与阶段一一并攒到下个里程碑。
+
+**范围**：
+- IImageProvider 接口新增 listModels + GenerateOptions.model
+- 主进程新增 config:list-models IPC
+- testConnection 返回延迟 / 错误码 / 覆盖 4 个 Provider
+- ProviderConfig 持久化 baseURL，generate / list-models / test 三条链路尊重
+- ApiConfigPage UI 接入：自定义 Base URL 输入、从 API 同步模型、测试结果详情、当前选用高亮
+- Web 模式 generationStore 透传 model 字段
+- listModels 单元测试 10 条
+
+**验收条件**：
+- [x] 5 个 Provider 全部实现 listModels（OpenAI/Stability 走 API；Zhipu/Aliyun 失败 fallback；Mock 静态）
+- [x] config:list-models IPC 主进程不依赖 renderer 模块（直接 fetch + 集中维护 DEFAULT_BASE_URLS / FALLBACK_MODELS）
+- [x] testConnection 返回值包含 latencyMs + errorCode；4 个 Provider 全部支持
+- [x] ProviderConfig.baseURL 在 generate / list-models / test-connection 三条链路全部生效；空字符串触发物理删除
+- [x] ApiConfigPage 测试连接显示「延迟 + 错误码」；模型行有「· 当前选用」高亮
+- [x] storageAdapter 缓存 listModels 结果 10 分钟
+- [x] generationStore Web 路径透传 options.model
+- [x] 测试套件 44 → 54，type-check + lint 全绿
+
+---
+
+### 任务记录
+
+### T-201: IImageProvider + 5 Provider listModels
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：接口扩展 + 5 个 Provider 类实现 listModels；GenerateOptions.model 字段
+- **涉及文件**：`IImageProvider.ts`、`MockProvider.ts`、`OpenAIProvider.ts`、`StabilityProvider.ts`、`ZhipuProvider.ts`、`AliyunProvider.ts`
+- **变更摘要**：3 个 Provider 类把硬编码 URL 提到 config.baseURL ?? default；阿里云原 BASE_URL 拆为 DEFAULT_BASE_URL + TASK_PATH
+- **Commit**：`831cffa feat: IImageProvider 增加 listModels + GenerateOptions.model`
+
+### T-202: testConnection 增强
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：config:test 返回 latencyMs + errorCode；补 stability / zhipu 探活
+- **涉及文件**：`electron/ipc/config.ts`、`electron/preload.ts`、`src/types/electron.d.ts`
+- **变更摘要**：buildResult 辅助函数统一返回结构；errorCode 区分 HTTP_xxx / NETWORK / TIMEOUT / UNKNOWN_PROVIDER / UNKNOWN
+- **Commit**：`dd3324d feat: testConnection 返回延迟 / 错误码 / 覆盖 4 个 Provider`
+
+### T-203: config:list-models IPC
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：主进程拉动态模型列表
+- **涉及文件**：`electron/ipc/config.ts`、`electron/preload.ts`、`src/types/electron.d.ts`
+- **变更摘要**：fetchModelsForProvider 辅助函数 + DEFAULT_BASE_URLS / FALLBACK_MODELS 字典；不在主进程实例化 Provider 类（避免 renderer-only 依赖）
+- **Commit**：`8be2aca feat: 新增 config:list-models IPC 拉取动态模型列表`
+
+### T-204: ProviderConfig.baseURL 持久化
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：config:get 透出 baseURL；config:set 接收 baseURL（空字符串视为"删除字段"）
+- **涉及文件**：`electron/ipc/config.ts`、`electron/preload.ts`、`src/types/electron.d.ts`
+- **变更摘要**：选项 D-2.4=B，物理删除字段更干净
+- **Commit**：`eee0a9c feat: ProviderConfig 支持自定义 baseURL`
+
+### T-205: 主进程 handler 尊重 baseURL
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：handleStability / handleZhipu / handleAliyun 用 config.baseURL ?? default
+- **涉及文件**：`electron/ipc/imageGeneration.ts`
+- **变更摘要**：handleOpenAI 已经支持，无需改；3 个 handler 同步加 options.model 覆盖（之前只 handleAliyun 有）
+- **Commit**：`9608cdb feat: 自定义 baseURL 在所有 handler 生效`
+
+### T-206: ApiConfigPage UI 接入
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：自定义 Base URL 输入 / 从 API 同步模型 / 测试结果详情 / 当前选用高亮
+- **涉及文件**：`src/components/ApiConfig/ApiConfigPage.tsx`
+- **变更摘要**：+214 / -35；diff 合并策略 D-2.2=B（已存在模型保留 remaining）；缓存策略 D-2.1=A（storageAdapter 10 分钟）
+- **Commit**：`f69a5ad feat: ApiConfigPage 支持 baseURL / 动态模型 / 测试结果详情`
+
+### T-207: Web 模式透传 model
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：providerManager.generate(promptText, options) 在 Web 路径也传 options.model
+- **涉及文件**：`src/store/generationStore.ts`、`src/store/__tests__/generationStore.test.ts`
+- **变更摘要**：测试断言由 `[promptText]` 改为 `[promptText, {}]`
+- **Commit**：`aba7252 feat: Web 模式 generationStore 也透传 model 字段`
+
+### T-208: listModels 单元测试
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：5 Provider × 成功 + 失败/fallback ≈ 10 条测试
+- **涉及文件**：`src/providers/__tests__/listModels.test.ts`（新建）
+- **变更摘要**：用 global.fetch = vi.fn() 拦截网络（与 T-X3 同款兼容写法）；测试套件 44 → 54
+- **Commit**：`4fdd0e4 test: 新增 listModels 单元测试`
+
+### T-209: 阶段二收尾文档同步（本任务）
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：CHANGELOG / tasks.md / 改进计划三处同步阶段二完成情况
+- **涉及文件**：`CHANGELOG.md`、`tasks.md`、`DayCard-Image改进计划.md`
+
+---
+
+**优化阶段 4 回顾**（2026-05-17）：
+- ✅ 8 个子任务全部完成，1 个新文件（listModels.test.ts），10 个修改文件
+- ✅ 测试套件由 44 → 54 用例，全绿；type-check 0 errors；lint 0 errors（warning 全为预先存在的 import-order）
+- ✅ 净代码变化：+750 行（含测试 +163 / UI +180 / IPC +290 / 类型与 Provider +120）
+- ✅ 改进计划阶段二 2.1～2.4 全部勾选完成；2.5 由阶段一 T-108 已交付
+- ✅ 决策项落地：D-2.1=A（storageAdapter 10 分钟缓存）/ D-2.2=B（diff 补缺保留 remaining）/ D-2.3=A（写测试）/ D-2.4=B（物理删除空字段）
+- ⚠️ 不打 tag（按你 2026-05-17 的决策），等阶段三/四凑齐再统一发版
+- **结论**：阶段二 API 能力升级已交付；codebase 准备好承接阶段三 UI/UX 升级
