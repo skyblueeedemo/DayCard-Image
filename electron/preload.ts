@@ -46,7 +46,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // API 配置
   getConfig: () => ipcRenderer.invoke('config:get'),
-  updateConfig: (params: { providerId: string; apiKey?: string; models?: Record<string, { description?: string; remaining: number; total: number }> }) =>
+  updateConfig: (params: { providerId: string; apiKey?: string; baseURL?: string; models?: Record<string, { description?: string; remaining: number; total: number }> }) =>
     ipcRenderer.invoke('config:set', params),
   testConnection: (params: { providerId: string; apiKey: string; baseURL?: string }) =>
     ipcRenderer.invoke('config:test', params),

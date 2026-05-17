@@ -150,12 +150,13 @@ function registerConfigIpc(): void {
       const raw = fs.readFileSync(configPath, 'utf-8');
       const config: AppConfig = JSON.parse(raw);
 
-      // 脱敏 API Key
+      // 脱敏 API Key（baseURL 不脱敏，不是敏感信息）
       const masked: Record<string, unknown> = {};
       for (const [pid, pc] of Object.entries(config.providers)) {
         masked[pid] = {
           hasKey: !!pc.apiKey,
           maskedKey: pc.apiKey ? maskKey(pc.apiKey) : null,
+          baseURL: pc.baseURL,
           models: pc.models ?? {},
         };
       }
@@ -170,6 +171,7 @@ function registerConfigIpc(): void {
   ipcMain.handle('config:set', async (_event, params: {
     providerId: string;
     apiKey?: string;
+    baseURL?: string;
     models?: Record<string, ProviderModelConfig>;
   }) => {
     try {
@@ -186,6 +188,15 @@ function registerConfigIpc(): void {
 
       if (params.apiKey !== undefined) {
         config.providers[params.providerId].apiKey = params.apiKey;
+      }
+
+      if (params.baseURL !== undefined) {
+        // D-2.4 选项 B：空字符串视为"删除字段"，恢复默认 baseURL
+        if (params.baseURL === '') {
+          delete config.providers[params.providerId].baseURL;
+        } else {
+          config.providers[params.providerId].baseURL = params.baseURL;
+        }
       }
 
       if (params.models !== undefined) {
