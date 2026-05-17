@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useKeyboardShortcuts, NAVIGATE_EVENT, type NavigateEventDetail } from '@/hooks/useKeyboardShortcuts';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useAppearance } from '@/hooks/useAppearance';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -44,9 +44,19 @@ function MainApp() {
       addToast('每日自动生图已完成！', 'success');
     });
 
+    // 键盘快捷键路由跳转事件（来自 useKeyboardShortcuts）
+    const handleShortcutNav = (e: Event) => {
+      const detail = (e as CustomEvent<NavigateEventDetail>).detail;
+      if (detail && isRouteId(detail.page)) {
+        setActivePage(detail.page);
+      }
+    };
+    window.addEventListener(NAVIGATE_EVENT, handleShortcutNav);
+
     return () => {
       unsubNav?.();
       unsubScheduler?.();
+      window.removeEventListener(NAVIGATE_EVENT, handleShortcutNav);
     };
   }, [addToast]);
 
