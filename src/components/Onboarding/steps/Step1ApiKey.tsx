@@ -38,7 +38,7 @@ export default function Step1ApiKey({ formData, onChange }: Step1ApiKeyProps) {
               value={formData[key]}
               onChange={(e) => onChange({ ...formData, [key]: e.target.value })}
               placeholder={placeholder}
-              className="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-brand"
             />
           </div>
         ))}

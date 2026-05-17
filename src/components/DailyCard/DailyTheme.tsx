@@ -46,8 +46,8 @@ export default function DailyTheme() {
     return (
       <div className="w-full max-w-2xl">
         <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-3">今日主题</h3>
-        <div className="rounded-lg border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/20 p-5 text-center">
-          <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-white dark:bg-gray-800 p-4 mb-4 text-left">
+        <div className="rounded-lg border-2 border-dashed border-brand/30 dark:border-brand/40 bg-brand/5 dark:bg-brand/10 p-5 text-center">
+          <div className="rounded-lg border border-brand/20 dark:border-brand/30 bg-white dark:bg-gray-800 p-4 mb-4 text-left">
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">
               {sampleTheme.name}
             </h3>
@@ -60,7 +60,7 @@ export default function DailyTheme() {
           </p>
           <button
             onClick={handleStart}
-            className="px-6 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors shadow-lg shadow-blue-600/25"
+            className="px-6 py-2.5 rounded-lg bg-brand text-brand-fg text-sm font-medium hover:bg-brand-hover transition-colors shadow-lg shadow-brand/25"
           >
             开始今天的抽卡吧！
           </button>
@@ -82,7 +82,7 @@ export default function DailyTheme() {
               onClick={() => handleUseTheme(theme)}
               className={`rounded-lg border p-3 cursor-pointer transition-colors ${
                 isActive
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                  ? 'border-brand bg-brand/5 dark:bg-brand/10'
                   : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
@@ -90,9 +90,9 @@ export default function DailyTheme() {
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{theme.description}</p>
               <div className="mt-2">
                 {isActive ? (
-                  <span className="text-xs text-blue-600 dark:text-blue-300">已选中</span>
+                  <span className="text-xs text-brand">已选中</span>
                 ) : (
-                  <span className="text-xs text-blue-500 dark:text-blue-400">点击使用</span>
+                  <span className="text-xs text-brand">点击使用</span>
                 )}
               </div>
             </div>

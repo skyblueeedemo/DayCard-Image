@@ -50,7 +50,7 @@ export default function PromptInput({ isOnline = true }: PromptInputProps) {
           disabled={isGenerating || !isOnline}
           rows={3}
           maxLength={500}
-          className="w-full resize-none rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full resize-none rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         />
 
         <div className="absolute bottom-3 right-3 flex items-center gap-3">
@@ -59,7 +59,7 @@ export default function PromptInput({ isOnline = true }: PromptInputProps) {
             onClick={handleSubmit}
             disabled={!prompt.trim() || isGenerating || quotaExhausted || !isOnline}
             title={!isOnline ? '离线状态无法生成' : quotaExhausted ? (error ?? undefined) : undefined}
-            className="px-4 py-1.5 rounded-md bg-blue-600 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            className="px-4 py-1.5 rounded-md bg-brand text-sm font-medium text-brand-fg hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           >
             {isGenerating && (
               <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">

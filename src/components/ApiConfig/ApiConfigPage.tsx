@@ -279,7 +279,7 @@ export default function ApiConfigPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-16">
-        <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full" />
+        <div className="animate-spin h-6 w-6 border-2 border-brand border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -330,11 +330,11 @@ export default function ApiConfigPage() {
                   <button onClick={() => moveOrder(index, -1)} disabled={index === 0} className={btnSortClass} title="上移">↑</button>
                   <button onClick={() => moveOrder(index, 1)} disabled={index === sortedEntries.length - 1} className={btnSortClass} title="下移">↓</button>
                   {pid === activeProviderId ? (
-                    <span className="text-xs text-blue-500 dark:text-blue-400 ml-2">当前</span>
+                    <span className="text-xs text-brand ml-2">当前</span>
                   ) : (
                     <button
                       onClick={() => setActiveProvider(pid)}
-                      className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors ml-2"
+                      className="text-xs px-2 py-1 rounded bg-brand text-brand-fg hover:bg-brand-hover transition-colors ml-2"
                     >
                       切换
                     </button>
@@ -361,12 +361,12 @@ export default function ApiConfigPage() {
                           value={keyInput}
                           onChange={(e) => setKeyInput(e.target.value)}
                           placeholder="输入 API Key..."
-                          className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 focus:border-blue-500 focus:outline-none"
+                          className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 focus:border-brand focus:outline-none"
                         />
                         <button
                           onClick={handleSaveKey}
                           disabled={saving || !keyInput.trim()}
-                          className="px-3 py-1.5 text-xs rounded bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50"
+                          className="px-3 py-1.5 text-xs rounded bg-brand text-brand-fg hover:bg-brand-hover disabled:opacity-50"
                         >
                           {saving ? '...' : '保存'}
                         </button>
@@ -441,7 +441,7 @@ export default function ApiConfigPage() {
                           value={baseURLInput}
                           onChange={(e) => setBaseURLInput(e.target.value)}
                           placeholder="例如：https://api.example.com/v1"
-                          className="mt-1 w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 focus:border-blue-500 focus:outline-none font-mono"
+                          className="mt-1 w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 focus:border-brand focus:outline-none font-mono"
                         />
                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                           适用于代理、镜像或私有部署。点击保存后生效。
@@ -464,7 +464,7 @@ export default function ApiConfigPage() {
                           <button
                             onClick={() => handleInitModels(pid)}
                             disabled={saving}
-                            className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
+                            className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-brand hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
                           >
                             导入默认模型
                           </button>
@@ -473,7 +473,7 @@ export default function ApiConfigPage() {
                           <button
                             onClick={() => handleFetchModels(pid)}
                             disabled={fetchingModels === pid || saving}
-                            className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
+                            className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-brand hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
                             title="从 API 拉取最新模型列表（10 分钟内有缓存）"
                           >
                             {fetchingModels === pid ? '同步中...' : '从 API 同步'}
@@ -502,7 +502,7 @@ export default function ApiConfigPage() {
                                 key={mid}
                                 className={`flex items-center gap-1 py-1.5 px-2 rounded ${
                                   isCurrentModel
-                                    ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700'
+                                    ? 'bg-brand/5 dark:bg-brand/10 border border-brand/30 dark:border-brand/40'
                                     : 'bg-gray-50 dark:bg-gray-900/50'
                                 }`}
                               >
@@ -512,7 +512,7 @@ export default function ApiConfigPage() {
                                   <div>
                                     <span className="text-sm text-gray-700 dark:text-gray-200">{mid}</span>
                                     {isCurrentModel && (
-                                      <span className="text-xs text-blue-600 dark:text-blue-400 ml-2">· 当前选用</span>
+                                      <span className="text-xs text-brand ml-2">· 当前选用</span>
                                     )}
                                     {info.description && (
                                       <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">{info.description}</span>

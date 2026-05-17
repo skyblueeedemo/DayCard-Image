@@ -44,7 +44,7 @@ export default function FavoritesPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-16">
-        <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full" />
+        <div className="animate-spin h-6 w-6 border-2 border-brand border-t-transparent rounded-full" />
       </div>
     );
   }

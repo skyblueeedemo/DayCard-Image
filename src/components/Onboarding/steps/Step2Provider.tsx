@@ -28,7 +28,7 @@ export default function Step2Provider({ selected, onChange, configuredProviders 
             onClick={() => onChange(id)}
             className={`text-left p-3 rounded-lg border transition-colors ${
               selected === id
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                ? 'border-brand bg-brand/5 dark:bg-brand/10'
                 : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >

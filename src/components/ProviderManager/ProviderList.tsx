@@ -116,7 +116,7 @@ export default function ProviderList() {
                 key={p.id}
                 className={`rounded-lg border p-4 transition-colors ${
                   isActive
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                    ? 'border-brand bg-brand/5 dark:bg-brand/10'
                     : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
@@ -145,7 +145,7 @@ export default function ProviderList() {
                       </button>
                     )}
                     {isActive && (
-                      <span className="text-xs text-blue-500 dark:text-blue-400 ml-2">当前</span>
+                      <span className="text-xs text-brand ml-2">当前</span>
                     )}
                   </div>
                 </div>

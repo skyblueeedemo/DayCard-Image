@@ -16,7 +16,7 @@ export default function ToastContainer() {
               ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/90 text-green-700 dark:text-green-200'
               : toast.type === 'error'
                 ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/90 text-red-700 dark:text-red-200'
-                : 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/90 text-blue-700 dark:text-blue-200'
+                : 'border-border-default dark:border-border-default bg-surface-2 dark:bg-surface-2 text-fg-primary dark:text-fg-primary'
           }`}
         >
           <div className="flex items-center gap-3">

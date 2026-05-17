@@ -66,7 +66,7 @@ export default function OnboardingWizard() {
               <div
                 key={i}
                 className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                  i === step ? 'bg-blue-500' : i < step ? 'bg-blue-700' : 'bg-gray-300 dark:bg-gray-700'
+                  i === step ? 'bg-brand' : i < step ? 'bg-brand/60' : 'bg-gray-300 dark:bg-gray-700'
                 }`}
               />
             ))}
@@ -110,14 +110,14 @@ export default function OnboardingWizard() {
               {step < 3 ? (
                 <button
                   onClick={handleNext}
-                  className="px-4 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+                  className="px-4 py-2 text-sm rounded bg-brand text-brand-fg hover:bg-brand-hover transition-colors"
                 >
                   下一步
                 </button>
               ) : (
                 <button
                   onClick={handleComplete}
-                  className="px-4 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+                  className="px-4 py-2 text-sm rounded bg-brand text-brand-fg hover:bg-brand-hover transition-colors"
                 >
                   完成
                 </button>

@@ -100,7 +100,7 @@ export default function App() {
   if (!isHydrated) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-white dark:bg-gray-950">
-        <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-2 border-brand border-t-transparent rounded-full" />
       </div>
     );
   }

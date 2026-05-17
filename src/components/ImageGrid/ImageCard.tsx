@@ -15,7 +15,7 @@ const providerColors: Record<string, string> = {
   mock: 'bg-purple-700 text-purple-200',
   openai: 'bg-green-700 text-green-200',
   stability: 'bg-yellow-700 text-yellow-200',
-  zhipu: 'bg-blue-700 text-blue-200',
+  zhipu: 'bg-fg-secondary text-surface-0',
   aliyun: 'bg-orange-700 text-orange-200',
 };
 
@@ -226,7 +226,7 @@ export default function ImageCard({ result, onDelete }: ImageCardProps) {
               disabled={likeLoading}
               className={`flex-1 text-xs py-1 px-2 rounded transition-colors flex items-center justify-center gap-1 ${
                 liked
-                  ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-700'
+                  ? 'bg-brand/10 dark:bg-brand/20 text-brand border border-brand/30 dark:border-brand/40'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border border-transparent hover:border-gray-300 dark:hover:border-gray-500'
               }`}
               title={liked ? '取消喜欢' : '喜欢'}
@@ -292,7 +292,7 @@ export default function ImageCard({ result, onDelete }: ImageCardProps) {
                 type="checkbox"
                 checked={skipNext}
                 onChange={(e) => setSkipNext(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-blue-600 focus:ring-0"
+                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-brand focus:ring-0"
               />
               <span className="text-xs text-gray-500 dark:text-gray-400">以后不再提示</span>
             </label>

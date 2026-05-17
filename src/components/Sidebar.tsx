@@ -22,7 +22,7 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
             onClick={() => onNavigate(item.id)}
             className={`w-full flex items-center gap-3 px-5 py-3 text-sm transition-colors ${
               activePage === item.id
-                ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white border-r-2 border-blue-500'
+                ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white border-r-2 border-brand'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-800/50'
             }`}
           >
