@@ -1,6 +1,7 @@
 import { ipcMain, app } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
+import { invalidateConfigCache } from './imageGeneration';
 
 interface ProviderModelConfig {
   description?: string;
@@ -209,6 +210,9 @@ function registerConfigIpc(): void {
       }
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
 
+      // 写入后失效 imageGeneration 的 loadConfig 缓存，确保下次生成读到新值
+      invalidateConfigCache();
+
       return { status: 'ok' };
     } catch (err) {
       const message = err instanceof Error ? err.message : '保存配置失败';
@@ -355,6 +359,8 @@ function registerConfigIpc(): void {
         fs.mkdirSync(dir, { recursive: true });
       }
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+
+      invalidateConfigCache();
 
       return { status: 'ok' };
     } catch (err) {

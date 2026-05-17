@@ -29,16 +29,42 @@ interface ProviderMeta {
   available: boolean;
 }
 
+/**
+ * 简单内存缓存：loadConfig 结果 5 秒内复用。
+ *
+ * 动机：连续生成多张图（重试 / 多次点击）时，每次都重新读 config.json
+ * 无意义。5 秒窗口足够覆盖一次生成会话，过期后自动失效，文件被外部
+ * 修改（API 配置页保存）时下次读取仍能拿到最新值（最多延迟 5 秒）。
+ *
+ * config:set IPC 在写入后会调 invalidateConfigCache() 强制刷新，
+ * 因此用户操作下不会有可感知的滞后。
+ */
+const CONFIG_CACHE_TTL = 5_000;
+let configCache: { value: Config | null; expiresAt: number } | null = null;
+
+export function invalidateConfigCache(): void {
+  configCache = null;
+}
+
 function loadConfig(): Config | null {
+  const now = Date.now();
+  if (configCache && configCache.expiresAt > now) {
+    return configCache.value;
+  }
+
   const configPath = app.isPackaged
     ? path.join(app.getPath('userData'), 'config.json')
     : path.join(__dirname, '..', '..', 'config', 'local.json');
+  let value: Config | null = null;
   try {
     const raw = fs.readFileSync(configPath, 'utf-8');
-    return JSON.parse(raw);
+    value = JSON.parse(raw);
   } catch {
-    return null;
+    value = null;
   }
+
+  configCache = { value, expiresAt: now + CONFIG_CACHE_TTL };
+  return value;
 }
 
 // 获取所有可用 Provider 的元数据
