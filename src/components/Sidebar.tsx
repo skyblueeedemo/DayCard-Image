@@ -41,7 +41,7 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
 
       {/* Footer */}
       <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-400 dark:text-gray-500">
-        拾光匣 dev1.3.0
+        拾光匣 dev1.3.1
       </div>
     </aside>
   );
