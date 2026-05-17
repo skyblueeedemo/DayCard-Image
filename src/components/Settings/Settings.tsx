@@ -1,4 +1,5 @@
-import { Moon, Sun } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Moon, Sun, RefreshCw, Download, RotateCw, Check, AlertCircle } from 'lucide-react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useToastStore } from '../../store/toastStore';
 import { storageAdapter } from '../../store/storageAdapter';
@@ -44,6 +45,81 @@ export default function Settings() {
     updateSetting,
   } = useSettingsStore();
   const addToast = useToastStore((s) => s.addToast);
+
+  // ─── 自动更新状态机 ───────────────────────────────
+  type UpdateStatus = 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>('idle');
+  const [updateInfo, setUpdateInfo] = useState<{ version?: string; releaseDate?: string } | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!window.electronAPI?.onEvent) return;
+
+    const unsubAvailable = window.electronAPI.onEvent('update:available', (data) => {
+      const info = data as { version?: string; releaseDate?: string };
+      setUpdateInfo(info ?? null);
+      setUpdateStatus('available');
+    });
+    const unsubNotAvailable = window.electronAPI.onEvent('update:not-available', () => {
+      setUpdateStatus('not-available');
+      addToast('当前已是最新版本', 'success');
+    });
+    const unsubDownloaded = window.electronAPI.onEvent('update:downloaded', () => {
+      setUpdateStatus('downloaded');
+    });
+    const unsubError = window.electronAPI.onEvent('update:error', (data) => {
+      const info = data as { message?: string };
+      setUpdateError(info?.message ?? '检查更新失败');
+      setUpdateStatus('error');
+    });
+
+    return () => {
+      unsubAvailable?.();
+      unsubNotAvailable?.();
+      unsubDownloaded?.();
+      unsubError?.();
+    };
+  }, [addToast]);
+
+  const handleCheckUpdate = async () => {
+    if (!window.electronAPI?.checkForUpdate) {
+      addToast('当前环境不支持自动更新，请关注 GitHub Releases', 'info');
+      return;
+    }
+    setUpdateStatus('checking');
+    setUpdateError(null);
+    try {
+      await window.electronAPI.checkForUpdate();
+    } catch {
+      setUpdateError('检查更新失败');
+      setUpdateStatus('error');
+    }
+  };
+
+  const handleDownloadUpdate = async () => {
+    if (!window.electronAPI?.downloadUpdate) return;
+    setUpdateStatus('downloading');
+    try {
+      await window.electronAPI.downloadUpdate();
+      // download 完成由 'update:downloaded' 事件转 status='downloaded'
+    } catch {
+      setUpdateError('下载更新失败');
+      setUpdateStatus('error');
+    }
+  };
+
+  const handleInstallUpdate = async () => {
+    if (!window.electronAPI?.installUpdate) return;
+    const confirmed = window.confirm(
+      '应用即将关闭并安装更新，未保存的工作可能会丢失。\n\n确认现在重启更新吗？',
+    );
+    if (!confirmed) return;
+    try {
+      await window.electronAPI.installUpdate();
+    } catch {
+      addToast('启动安装失败', 'error');
+    }
+  };
 
   const handleAppearance = async (v: 'dark' | 'light') => {
     // 立即同步 DOM（不等待 IPC）
@@ -159,12 +235,86 @@ export default function Settings() {
             <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">Electron + React + TypeScript + TailwindCSS</p>
 
             <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700/50">
-              <button
-                onClick={() => addToast('暂不支持在线升级，请关注 GitHub Releases 获取最新版本', 'info')}
-                className="text-xs px-4 py-2 rounded bg-brand text-brand-fg hover:bg-brand-hover transition-colors"
-              >
-                检查更新
-              </button>
+              {/* 状态：idle / not-available / error → 显示「检查更新」按钮 */}
+              {(updateStatus === 'idle' || updateStatus === 'not-available' || updateStatus === 'error') && (
+                <div className="flex items-center gap-3 flex-wrap">
+                  <button
+                    onClick={handleCheckUpdate}
+                    className="text-xs px-4 py-2 rounded bg-brand text-brand-fg hover:bg-brand-hover transition-colors flex items-center gap-2"
+                  >
+                    <RefreshCw size={14} strokeWidth={1.75} />
+                    检查更新
+                  </button>
+                  {updateStatus === 'error' && updateError && (
+                    <span className="text-xs text-status-danger flex items-center gap-1">
+                      <AlertCircle size={14} strokeWidth={1.75} />
+                      {updateError}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* 状态：checking */}
+              {updateStatus === 'checking' && (
+                <div className="flex items-center gap-2 text-xs text-fg-secondary">
+                  <RefreshCw size={14} strokeWidth={1.75} className="animate-spin" />
+                  正在检查更新...
+                </div>
+              )}
+
+              {/* 状态：available — 询问是否下载 */}
+              {updateStatus === 'available' && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs text-fg-primary">
+                    发现新版本 <span className="font-mono font-medium">v{updateInfo?.version}</span>
+                    {updateInfo?.releaseDate && (
+                      <span className="text-fg-muted ml-2">
+                        发布于 {new Date(updateInfo.releaseDate).toLocaleDateString()}
+                      </span>
+                    )}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDownloadUpdate}
+                      className="text-xs px-4 py-2 rounded bg-brand text-brand-fg hover:bg-brand-hover transition-colors flex items-center gap-2"
+                    >
+                      <Download size={14} strokeWidth={1.75} />
+                      立即下载
+                    </button>
+                    <button
+                      onClick={() => setUpdateStatus('idle')}
+                      className="text-xs px-4 py-2 rounded border border-border-default text-fg-secondary hover:bg-surface-2 transition-colors"
+                    >
+                      稍后再说
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 状态：downloading */}
+              {updateStatus === 'downloading' && (
+                <div className="flex items-center gap-2 text-xs text-fg-secondary">
+                  <Download size={14} strokeWidth={1.75} className="animate-pulse" />
+                  下载中，请稍候...
+                </div>
+              )}
+
+              {/* 状态：downloaded — 询问是否安装 */}
+              {updateStatus === 'downloaded' && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs text-fg-primary flex items-center gap-1">
+                    <Check size={14} strokeWidth={1.75} className="text-status-success" />
+                    新版本下载完成
+                  </p>
+                  <button
+                    onClick={handleInstallUpdate}
+                    className="self-start text-xs px-4 py-2 rounded bg-brand text-brand-fg hover:bg-brand-hover transition-colors flex items-center gap-2"
+                  >
+                    <RotateCw size={14} strokeWidth={1.75} />
+                    立即重启更新
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
