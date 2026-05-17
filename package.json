@@ -60,8 +60,8 @@
     "productName": "拾光匣",
     "publish": {
       "provider": "github",
-      "owner": "<your-github-username>",
-      "repo": "<your-repo-name>"
+      "owner": "skyblueeedemo",
+      "repo": "DayCard-Image"
     },
     "directories": {
       "output": "release"
