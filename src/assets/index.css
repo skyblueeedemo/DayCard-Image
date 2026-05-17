@@ -16,8 +16,8 @@
 
 :root {
   /* Brand：黑白二色的中性强调（亮色模式） */
-  --color-brand: 23 23 23;            /* neutral-900 */
-  --color-brand-hover: 38 38 38;      /* neutral-800 */
+  --color-brand: 64 64 64;            /* neutral-700 — 中深灰，比纯黑柔和 */
+  --color-brand-hover: 38 38 38;      /* neutral-800 — hover 加深 */
   --color-brand-fg: 255 255 255;      /* 按钮上的文字色 */
 
   /* Surface 层级（亮色基底） */
