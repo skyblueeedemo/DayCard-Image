@@ -36,6 +36,20 @@ module.exports = {
           hover: '#374151',
         },
       },
+      keyframes: {
+        'page-in': {
+          '0%': { opacity: '0', transform: 'translateY(4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'toast-in': {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'page-in': 'page-in 150ms ease-out',
+        'toast-in': 'toast-in 200ms ease-out',
+      },
     },
   },
   plugins: [],

@@ -20,7 +20,7 @@ export default function ToastContainer() {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`px-4 py-2 rounded-lg border text-sm shadow-lg pointer-events-auto transition-all ${
+          className={`px-4 py-2 rounded-lg border text-sm shadow-lg pointer-events-auto animate-toast-in ${
             toast.type === 'success'
               ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/90 text-green-700 dark:text-green-200'
               : toast.type === 'error'

@@ -81,7 +81,9 @@ function MainApp() {
       <Sidebar activePage={activePage} onNavigate={setActivePage} />
 
       <main className="flex-1 overflow-y-auto p-6">
-        {pageRenderers[activePage]}
+        <div key={activePage} className="animate-page-in">
+          {pageRenderers[activePage]}
+        </div>
       </main>
       <ToastContainer />
     </div>
