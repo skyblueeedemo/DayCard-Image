@@ -50,7 +50,7 @@ declare global {
       saveResults?: (results: unknown[]) => Promise<{ status: string; message?: string }>;
       getConfig?: () => Promise<{ status: string; data?: Record<string, unknown>; message?: string }>;
       updateConfig?: (params: { providerId: string; apiKey?: string; models?: Record<string, { description?: string; remaining: number; total: number }> }) => Promise<{ status: string; message?: string }>;
-      testConnection?: (params: { providerId: string; apiKey: string }) => Promise<{ status: string; message?: string }>;
+      testConnection?: (params: { providerId: string; apiKey: string; baseURL?: string }) => Promise<{ status: string; message?: string; latencyMs?: number; errorCode?: string }>;
       setProviderOrder?: (order: string[]) => Promise<{ status: string; message?: string }>;
       checkForUpdate?: () => Promise<{ status: string; message?: string }>;
       downloadUpdate?: () => Promise<{ status: string; message?: string }>;

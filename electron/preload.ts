@@ -48,7 +48,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getConfig: () => ipcRenderer.invoke('config:get'),
   updateConfig: (params: { providerId: string; apiKey?: string; models?: Record<string, { description?: string; remaining: number; total: number }> }) =>
     ipcRenderer.invoke('config:set', params),
-  testConnection: (params: { providerId: string; apiKey: string }) =>
+  testConnection: (params: { providerId: string; apiKey: string; baseURL?: string }) =>
     ipcRenderer.invoke('config:test', params),
   setProviderOrder: (order: string[]) =>
     ipcRenderer.invoke('config:set-order', order),

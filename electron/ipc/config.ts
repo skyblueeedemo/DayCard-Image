@@ -100,11 +100,25 @@ function registerConfigIpc(): void {
   ipcMain.handle('config:test', async (_event, params: {
     providerId: string;
     apiKey: string;
+    baseURL?: string;
   }) => {
+    const start = Date.now();
+    const buildResult = (
+      ok: boolean,
+      message: string,
+      extra?: { errorCode?: string; latencyMs?: number },
+    ) => ({
+      status: ok ? 'ok' : 'error',
+      message,
+      latencyMs: extra?.latencyMs ?? (Date.now() - start),
+      errorCode: extra?.errorCode,
+    });
+
     try {
       if (params.providerId === 'aliyun') {
+        const baseURL = params.baseURL || 'https://dashscope.aliyuncs.com';
         const res = await fetch(
-          'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+          `${baseURL}/api/v1/services/aigc/multimodal-generation/generation`,
           {
             method: 'POST',
             headers: {
@@ -118,25 +132,63 @@ function registerConfigIpc(): void {
             }),
           },
         );
-        if (res.ok) {
-          return { status: 'ok', message: '连接成功' };
-        }
+        if (res.ok) return buildResult(true, '连接成功');
         const errText = await res.text();
-        return { status: 'error', message: `API 返回 ${res.status}: ${errText.slice(0, 200)}` };
+        return buildResult(false, `API 返回 ${res.status}: ${errText.slice(0, 200)}`, {
+          errorCode: `HTTP_${res.status}`,
+        });
       }
 
       if (params.providerId === 'openai') {
-        const res = await fetch('https://api.openai.com/v1/models', {
+        const baseURL = params.baseURL || 'https://api.openai.com/v1';
+        const res = await fetch(`${baseURL}/models`, {
           headers: { Authorization: `Bearer ${params.apiKey}` },
         });
-        if (res.ok) return { status: 'ok', message: '连接成功' };
-        return { status: 'error', message: `API 返回 ${res.status}` };
+        if (res.ok) return buildResult(true, '连接成功');
+        return buildResult(false, `API 返回 ${res.status}`, {
+          errorCode: `HTTP_${res.status}`,
+        });
       }
 
-      return { status: 'error', message: `不支持的模型服务: ${params.providerId}` };
+      if (params.providerId === 'stability') {
+        const baseURL = params.baseURL || 'https://api.stability.ai';
+        const res = await fetch(`${baseURL}/v1/engines/list`, {
+          headers: { Authorization: `Bearer ${params.apiKey}` },
+        });
+        if (res.ok) return buildResult(true, '连接成功');
+        return buildResult(false, `API 返回 ${res.status}`, {
+          errorCode: `HTTP_${res.status}`,
+        });
+      }
+
+      if (params.providerId === 'zhipu') {
+        const baseURL = params.baseURL || 'https://open.bigmodel.cn/api/paas/v4';
+        const res = await fetch(`${baseURL}/models`, {
+          headers: { Authorization: `Bearer ${params.apiKey}` },
+        });
+        if (res.ok) return buildResult(true, '连接成功');
+        return buildResult(false, `API 返回 ${res.status}`, {
+          errorCode: `HTTP_${res.status}`,
+        });
+      }
+
+      if (params.providerId === 'mock') {
+        // Mock 始终成功（开发环境豁免）
+        return buildResult(true, 'Mock 模型服务无需测试');
+      }
+
+      return buildResult(false, `不支持的模型服务: ${params.providerId}`, {
+        errorCode: 'UNKNOWN_PROVIDER',
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : '测试连接失败';
-      return { status: 'error', message };
+      // 区分网络异常 vs 其它
+      const errorCode = /timeout/i.test(message)
+        ? 'TIMEOUT'
+        : /fetch|network|enot/i.test(message)
+        ? 'NETWORK'
+        : 'UNKNOWN';
+      return buildResult(false, message, { errorCode });
     }
   });
 
