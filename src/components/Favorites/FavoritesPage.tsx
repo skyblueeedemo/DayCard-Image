@@ -65,7 +65,7 @@ export default function FavoritesPage() {
         results={likedResults}
         loading={false}
         emptyMessage="还没有喜欢的图片"
-        emptyHint="去生成一张并点击 👍 收藏吧"
+        emptyHint="去生成一张并点击「喜欢」收藏吧"
         onDelete={handleDelete}
       />
     </div>

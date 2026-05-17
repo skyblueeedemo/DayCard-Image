@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CalendarDays } from 'lucide-react';
 import { getThemeHistory, type DailyThemesEntry } from '@/utils/dailyTheme';
 import { useGenerationStore } from '@/store/generationStore';
 
@@ -9,7 +10,7 @@ export default function DailyThemeHistory() {
   if (history.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-gray-400 dark:text-gray-500">
-        <span className="text-5xl mb-4">📅</span>
+        <CalendarDays size={48} strokeWidth={1.25} className="mb-4" />
         <p className="text-sm">暂无主题历史</p>
         <p className="text-xs mt-1 text-gray-400 dark:text-gray-600">每日主题将自动保存在这里</p>
       </div>

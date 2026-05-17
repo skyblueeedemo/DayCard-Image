@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import { useToastStore } from '../../store/toastStore';
 import { useGenerationStore } from '../../store/generationStore';
 import { loadOrder, saveOrder, loadModelOrder, saveModelOrder } from '../../utils/providerOrder';
@@ -327,8 +328,8 @@ export default function ApiConfigPage() {
                   </div>
                 </button>
                 <div className="flex items-center gap-0.5 pr-2">
-                  <button onClick={() => moveOrder(index, -1)} disabled={index === 0} className={btnSortClass} title="上移">↑</button>
-                  <button onClick={() => moveOrder(index, 1)} disabled={index === sortedEntries.length - 1} className={btnSortClass} title="下移">↓</button>
+                  <button onClick={() => moveOrder(index, -1)} disabled={index === 0} className={btnSortClass} title="上移"><ChevronUp size={14} strokeWidth={2} /></button>
+                  <button onClick={() => moveOrder(index, 1)} disabled={index === sortedEntries.length - 1} className={btnSortClass} title="下移"><ChevronDown size={14} strokeWidth={2} /></button>
                   {pid === activeProviderId ? (
                     <span className="text-xs text-brand ml-2">当前</span>
                   ) : (
@@ -506,8 +507,8 @@ export default function ApiConfigPage() {
                                     : 'bg-gray-50 dark:bg-gray-900/50'
                                 }`}
                               >
-                                <button onClick={() => moveModelOrder(pid, index, -1)} disabled={index === 0} className="text-xs px-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-20" title="上移">↑</button>
-                                <button onClick={() => moveModelOrder(pid, index, 1)} disabled={index === sorted.length - 1} className="text-xs px-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-20" title="下移">↓</button>
+                                <button onClick={() => moveModelOrder(pid, index, -1)} disabled={index === 0} className="text-xs px-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-20" title="上移"><ChevronUp size={12} strokeWidth={2} /></button>
+                                <button onClick={() => moveModelOrder(pid, index, 1)} disabled={index === sorted.length - 1} className="text-xs px-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-20" title="下移"><ChevronDown size={12} strokeWidth={2} /></button>
                                 <div className="flex-1 flex items-center justify-between">
                                   <div>
                                     <span className="text-sm text-gray-700 dark:text-gray-200">{mid}</span>

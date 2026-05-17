@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import type { ImageResult } from '@/providers/IImageProvider';
 import { useGenerationStore } from '@/store/generationStore';
 import { useWallpaper } from '@/hooks/useWallpaper';
@@ -231,7 +232,8 @@ export default function ImageCard({ result, onDelete }: ImageCardProps) {
               }`}
               title={liked ? '取消喜欢' : '喜欢'}
             >
-              {liked ? '👍' : '👍'} {liked ? '已喜欢' : '喜欢'}
+              {liked ? '已喜欢' : '喜欢'}
+              <ThumbsUp size={14} strokeWidth={1.75} className={liked ? 'fill-current' : ''} />
             </button>
             <button
               onClick={handleDislike}
@@ -239,7 +241,8 @@ export default function ImageCard({ result, onDelete }: ImageCardProps) {
               className="flex-1 text-xs py-1 px-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border border-transparent hover:border-gray-300 dark:hover:border-gray-500 transition-colors flex items-center justify-center gap-1"
               title="不喜欢，删除此图像"
             >
-              👎 不喜欢
+              不喜欢
+              <ThumbsDown size={14} strokeWidth={1.75} />
             </button>
           </div>
         )}

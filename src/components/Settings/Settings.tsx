@@ -1,3 +1,4 @@
+import { Moon, Sun } from 'lucide-react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useToastStore } from '../../store/toastStore';
 import { storageAdapter } from '../../store/storageAdapter';
@@ -73,23 +74,25 @@ export default function Settings() {
           <div className="flex gap-2">
             <button
               onClick={() => handleAppearance('dark')}
-              className={`flex-1 text-sm py-2 rounded border transition-colors ${
+              className={`flex-1 text-sm py-2 rounded border transition-colors flex items-center justify-center gap-2 ${
                 appearance === 'dark'
                   ? 'border-brand bg-brand/5 dark:bg-brand/10 text-brand'
                   : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
-              🌙 暗夜模式
+              <Moon size={16} strokeWidth={1.75} />
+              暗夜模式
             </button>
             <button
               onClick={() => handleAppearance('light')}
-              className={`flex-1 text-sm py-2 rounded border transition-colors ${
+              className={`flex-1 text-sm py-2 rounded border transition-colors flex items-center justify-center gap-2 ${
                 appearance === 'light'
                   ? 'border-brand bg-brand/5 dark:bg-brand/10 text-brand'
                   : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
-              ☀ 亮白模式
+              <Sun size={16} strokeWidth={1.75} />
+              亮白模式
             </button>
           </div>
         </div>

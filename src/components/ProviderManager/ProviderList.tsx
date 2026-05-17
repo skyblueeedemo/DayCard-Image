@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import type { IImageProvider, QuotaInfo } from '@/providers/IImageProvider';
 import { providerManager } from '@/providers/ProviderManager';
 import { useGenerationStore } from '@/store/generationStore';
@@ -133,8 +134,8 @@ export default function ProviderList() {
                   </div>
 
                   <div className="flex items-center gap-1">
-                    <button onClick={() => move(index, -1)} disabled={index === 0} className={btnSm} title="上移">↑</button>
-                    <button onClick={() => move(index, 1)} disabled={index === sortedProviders.length - 1} className={btnSm} title="下移">↓</button>
+                    <button onClick={() => move(index, -1)} disabled={index === 0} className={btnSm} title="上移"><ChevronUp size={14} strokeWidth={2} /></button>
+                    <button onClick={() => move(index, 1)} disabled={index === sortedProviders.length - 1} className={btnSm} title="下移"><ChevronDown size={14} strokeWidth={2} /></button>
 
                     {!isActive && (
                       <button
