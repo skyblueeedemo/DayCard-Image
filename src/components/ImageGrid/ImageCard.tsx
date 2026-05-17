@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import type { ImageResult } from '@/providers/IImageProvider';
 import { useGenerationStore } from '@/store/generationStore';
@@ -22,7 +22,7 @@ function setSkipConfirm(skip: boolean): void {
   storageAdapter.setString(SKIP_CONFIRM_KEY, String(skip));
 }
 
-export default function ImageCard({ result, onDelete }: ImageCardProps) {
+function ImageCard({ result, onDelete }: ImageCardProps) {
   const retryGenerate = useGenerationStore((s) => s.retryGenerate);
   const removeResult = useGenerationStore((s) => s.removeResult);
   const isGenerating = useGenerationStore((s) => s.isGenerating);
@@ -317,3 +317,11 @@ export default function ImageCard({ result, onDelete }: ImageCardProps) {
     </div>
   );
 }
+
+/**
+ * memo 化 — 历史记录页 / 收藏页通常一次渲染数十张图，
+ * 父组件状态变化（如筛选条件）不应触发全量子组件重渲。
+ * onDelete 回调通常是稳定引用（父组件 useCallback 或 inline），
+ * result 由列表 key 区分，浅比较即可。
+ */
+export default memo(ImageCard);
