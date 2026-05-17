@@ -10,12 +10,120 @@ interface ProviderModelConfig {
 
 interface ProviderConfig {
   apiKey?: string;
+  baseURL?: string;
   models?: Record<string, ProviderModelConfig>;
 }
 
 interface AppConfig {
   providers: Record<string, ProviderConfig>;
   providerOrder?: string[];
+}
+
+interface ModelMeta {
+  id: string;
+  name?: string;
+  description?: string;
+}
+
+const DEFAULT_BASE_URLS: Record<string, string> = {
+  openai: 'https://api.openai.com/v1',
+  stability: 'https://api.stability.ai',
+  zhipu: 'https://open.bigmodel.cn/api/paas/v4',
+  aliyun: 'https://dashscope.aliyuncs.com',
+};
+
+/**
+ * 各 Provider 的静态 fallback 列表（API 不可达 / 响应为空时使用）
+ */
+const FALLBACK_MODELS: Record<string, ModelMeta[]> = {
+  mock: [
+    { id: 'mock-default', name: 'Mock Default', description: '默认占位模型' },
+    { id: 'mock-fast', name: 'Mock Fast', description: '快速模式（无差异）' },
+  ],
+  zhipu: [
+    { id: 'cogview-3', name: 'CogView-3', description: '通用图像生成（默认）' },
+    { id: 'cogview-3-plus', name: 'CogView-3 Plus', description: '更高质量' },
+  ],
+  aliyun: [
+    { id: 'wan2.7-image-pro', name: 'wan2.7-image-pro', description: '文字渲染、品牌色、角色一致性' },
+    { id: 'wan2.7-image', name: 'wan2.7-image', description: '生成速度更快，最高 2K' },
+    { id: 'wanx2.0-t2i-turbo', name: 'wanx2.0-t2i-turbo', description: '通用图像生成（异步任务）' },
+    { id: 'qwen-image-2.0-pro', name: 'qwen-image-2.0-pro', description: '负向提示词、多图变体' },
+  ],
+};
+
+async function fetchModelsForProvider(
+  providerId: string,
+  apiKey: string,
+  customBaseURL?: string,
+): Promise<ModelMeta[]> {
+  const baseURL = customBaseURL || DEFAULT_BASE_URLS[providerId];
+
+  if (providerId === 'mock') {
+    return FALLBACK_MODELS.mock;
+  }
+
+  if (providerId === 'openai') {
+    const res = await fetch(`${baseURL}/models`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = (await res.json()) as { data?: { id: string }[] };
+    return (json.data ?? [])
+      .filter((m) => /image|dall-e/i.test(m.id))
+      .map((m) => ({ id: m.id, name: m.id }));
+  }
+
+  if (providerId === 'stability') {
+    const res = await fetch(`${baseURL}/v1/engines/list`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const arr = (await res.json()) as Array<{ id: string; name?: string; description?: string }>;
+    return (Array.isArray(arr) ? arr : []).map((e) => ({
+      id: e.id,
+      name: e.name ?? e.id,
+      description: e.description,
+    }));
+  }
+
+  if (providerId === 'zhipu') {
+    try {
+      const res = await fetch(`${baseURL}/models`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      if (res.ok) {
+        const json = (await res.json()) as { data?: { id: string }[] };
+        const filtered = (json.data ?? [])
+          .filter((m) => /cogview|image/i.test(m.id))
+          .map((m) => ({ id: m.id, name: m.id }));
+        if (filtered.length > 0) return filtered;
+      }
+    } catch {
+      // fallback below
+    }
+    return FALLBACK_MODELS.zhipu;
+  }
+
+  if (providerId === 'aliyun') {
+    try {
+      const res = await fetch(`${baseURL}/compatible-mode/v1/models`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      if (res.ok) {
+        const json = (await res.json()) as { data?: { id: string }[] };
+        const filtered = (json.data ?? [])
+          .filter((m) => /^(wan|wanx|qwen-image|z-image)/i.test(m.id))
+          .map((m) => ({ id: m.id, name: m.id }));
+        if (filtered.length > 0) return filtered;
+      }
+    } catch {
+      // fallback below
+    }
+    return FALLBACK_MODELS.aliyun;
+  }
+
+  throw new Error(`不支持的模型服务: ${providerId}`);
 }
 
 function getConfigPath(): string {
@@ -189,6 +297,34 @@ function registerConfigIpc(): void {
         ? 'NETWORK'
         : 'UNKNOWN';
       return buildResult(false, message, { errorCode });
+    }
+  });
+
+  /**
+   * 拉取指定 Provider 的可用模型列表。
+   * 主进程直接发请求（不经 Provider 类，避免引入 renderer 端依赖）。
+   * 失败时各 Provider 提供静态 fallback。
+   */
+  ipcMain.handle('config:list-models', async (_event, params: { providerId: string }) => {
+    try {
+      const configPath = getConfigPath();
+      let config: AppConfig = { providers: {} };
+      if (fs.existsSync(configPath)) {
+        config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      }
+      const pc = config.providers[params.providerId];
+      const apiKey = pc?.apiKey ?? '';
+      const baseURL = pc?.baseURL;
+
+      if (!apiKey && params.providerId !== 'mock') {
+        return { status: 'error', message: `[${params.providerId}] 未配置 API Key` };
+      }
+
+      const models = await fetchModelsForProvider(params.providerId, apiKey, baseURL);
+      return { status: 'ok', data: models };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '拉取模型列表失败';
+      return { status: 'error', message };
     }
   });
 

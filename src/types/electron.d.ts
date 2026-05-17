@@ -52,6 +52,7 @@ declare global {
       updateConfig?: (params: { providerId: string; apiKey?: string; models?: Record<string, { description?: string; remaining: number; total: number }> }) => Promise<{ status: string; message?: string }>;
       testConnection?: (params: { providerId: string; apiKey: string; baseURL?: string }) => Promise<{ status: string; message?: string; latencyMs?: number; errorCode?: string }>;
       setProviderOrder?: (order: string[]) => Promise<{ status: string; message?: string }>;
+      listProviderModels?: (providerId: string) => Promise<{ status: string; data?: Array<{ id: string; name?: string; description?: string }>; message?: string }>;
       checkForUpdate?: () => Promise<{ status: string; message?: string }>;
       downloadUpdate?: () => Promise<{ status: string; message?: string }>;
       installUpdate?: () => Promise<unknown>;

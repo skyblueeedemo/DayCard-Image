@@ -52,6 +52,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('config:test', params),
   setProviderOrder: (order: string[]) =>
     ipcRenderer.invoke('config:set-order', order),
+  listProviderModels: (providerId: string) =>
+    ipcRenderer.invoke('config:list-models', { providerId }),
 
   // 自动更新
   checkForUpdate: () => ipcRenderer.invoke('update:check'),
