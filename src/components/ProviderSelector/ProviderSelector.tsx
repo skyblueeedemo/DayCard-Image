@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { IImageProvider } from '@/providers/IImageProvider';
 import { providerManager } from '@/providers/ProviderManager';
 import { useGenerationStore } from '@/store/generationStore';
@@ -76,11 +76,29 @@ export default function ProviderSelector() {
     }
   }, []);
 
+  // 300ms debounce wrapper，避免短时间多次开合下拉触发 IPC 拥堵
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedRefresh = useCallback(() => {
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+    }
+    refreshTimerRef.current = setTimeout(() => {
+      refresh();
+      refreshTimerRef.current = null;
+    }, 300);
+  }, [refresh]);
+
   useEffect(() => {
     refresh();
     loadModels();
     // 初始化时同步读取模型排序（不依赖 loadModels 的异步结果）
     setModelOrder(loadModelOrder('aliyun'));
+
+    return () => {
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
+    };
   }, [refresh, loadModels]);
 
   // 初始化完成后，若 activeProviderId 为空，自动选中排序第一个可用的 Provider
@@ -149,7 +167,7 @@ export default function ProviderSelector() {
     <div className="relative flex items-center gap-2">
       <div className="relative">
         <button
-          onClick={() => { setOpen(!open); refresh(); }}
+          onClick={() => { setOpen(!open); debouncedRefresh(); }}
           className={btnClass}
         >
           <span className={`w-2 h-2 rounded-full ${isAvailable ? 'bg-green-400' : 'bg-red-400'}`} />
