@@ -73,15 +73,15 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: rgb(var(--color-border));
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
+  background: rgb(var(--color-text-muted));
 }
 
-/* 选中文本颜色 */
+/* 选中文本颜色 — 走 brand token */
 ::selection {
-  background-color: rgba(59, 130, 246, 0.4);
-  color: #fff;
+  background-color: rgb(var(--color-brand) / 0.4);
+  color: rgb(var(--color-brand-fg));
 }
