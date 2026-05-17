@@ -1,4 +1,12 @@
 import type { IImageProvider, ImageResult, GenerateOptions, QuotaInfo } from '../IImageProvider';
+import { storageAdapter } from '@/store/storageAdapter';
+
+const QUOTA_STORAGE_KEY = 'daycard-quota-openai';
+
+interface OpenAIQuotaState {
+  used: number;
+  date: string; // YYYY-MM-DD（本地时间）
+}
 
 interface OpenAIConfig {
   apiKey: string;
@@ -11,6 +19,11 @@ interface OpenAIConfig {
  * - 优先级：最高 (1)，默认主通道
  * - 每日免费 5 张
  * - 使用 OpenAI SDK 调用
+ *
+ * 注意：
+ * - 配额状态通过 storageAdapter 持久化到 localStorage（key: daycard-quota-openai）
+ * - Electron 环境下生成实际走 IPC + QuotaService（已持久化），
+ *   本类的 dailyUsed 主要影响 Web 模式 + 注册表展示侧的 getQuota()
  */
 export class OpenAIProvider implements IImageProvider {
   readonly id = 'openai';
@@ -28,6 +41,7 @@ export class OpenAIProvider implements IImageProvider {
       baseURL: 'https://api.openai.com/v1',
       ...config,
     };
+    this.hydrateQuota();
     this.checkDailyReset();
   }
 
@@ -74,6 +88,7 @@ export class OpenAIProvider implements IImageProvider {
 
     // 扣减配额
     this.dailyUsed += 1;
+    this.persistQuota();
 
     const imageData = data.data?.[0];
     if (!imageData?.url) {
@@ -136,7 +151,28 @@ export class OpenAIProvider implements IImageProvider {
     if (this.lastResetDate !== today) {
       this.dailyUsed = 0;
       this.lastResetDate = today;
+      this.persistQuota();
     }
+  }
+
+  /**
+   * 启动时从 storageAdapter 恢复配额状态。
+   * 若日期已变化，hydrate 后随即被 checkDailyReset 重置。
+   */
+  private hydrateQuota(): void {
+    const stored = storageAdapter.getJSON<OpenAIQuotaState | null>(QUOTA_STORAGE_KEY, null);
+    if (stored && typeof stored.used === 'number' && typeof stored.date === 'string') {
+      this.dailyUsed = stored.used;
+      this.lastResetDate = stored.date;
+    }
+  }
+
+  private persistQuota(): void {
+    const state: OpenAIQuotaState = {
+      used: this.dailyUsed,
+      date: this.lastResetDate,
+    };
+    storageAdapter.setJSON(QUOTA_STORAGE_KEY, state);
   }
 
   private getNextResetTime(): string {
