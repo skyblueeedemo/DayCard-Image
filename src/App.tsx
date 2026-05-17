@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useAppearance } from '@/hooks/useAppearance';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useToastStore } from '@/store/toastStore';
 import { storageAdapter } from '@/store/storageAdapter';
+import { DEFAULT_ROUTE, isRouteId, type RouteId } from '@/router/routes';
 import Sidebar from '@/components/Sidebar';
 import ImageGrid from '@/components/ImageGrid/ImageGrid';
 import PromptInput from '@/components/DailyCard/PromptInput';
@@ -27,16 +28,14 @@ function MainApp() {
   const isOnline = useNetworkStatus();
   const addToast = useToastStore((s) => s.addToast);
 
-  const [activePage, setActivePage] = useState<
-    'daily' | 'history' | 'theme-history' | 'api-config' | 'settings' | 'favorites'
-  >('daily');
+  const [activePage, setActivePage] = useState<RouteId>(DEFAULT_ROUTE);
 
   useEffect(() => {
     const unsubNav = window.electronAPI?.onEvent('navigate-to', (data) => {
       if (typeof data === 'object' && data && 'page' in data) {
         const page = (data as { page: string }).page;
-        if (['daily', 'history', 'theme-history', 'api-config', 'settings', 'favorites'].includes(page)) {
-          setActivePage(page as 'daily' | 'history' | 'theme-history' | 'api-config' | 'settings' | 'favorites');
+        if (isRouteId(page)) {
+          setActivePage(page);
         }
       }
     });
@@ -51,32 +50,38 @@ function MainApp() {
     };
   }, [addToast]);
 
+  // 路由表 → 页面元素的渲染映射
+  // 用 useMemo 缓存，避免每次渲染重建（DailyCard 涉及 isOnline 依赖时仍会刷新）
+  const dailyView = useMemo(
+    () => (
+      <div className="flex flex-col items-center gap-6 py-8">
+        {!isOnline && <OfflineBanner />}
+        <WelcomeBanner />
+        <QuotaBar />
+        <ProviderSelector />
+        <DailyTheme />
+        <PromptInput isOnline={isOnline} />
+        <ImageGrid />
+      </div>
+    ),
+    [isOnline],
+  );
+
+  const pageRenderers: Record<RouteId, JSX.Element> = {
+    daily: dailyView,
+    favorites: <FavoritesPage />,
+    history: <HistoryPage />,
+    'theme-history': <DailyThemeHistory />,
+    'api-config': <ApiConfigPage />,
+    settings: <Settings />,
+  };
+
   return (
     <div className="flex h-screen w-screen overflow-hidden">
       <Sidebar activePage={activePage} onNavigate={setActivePage} />
 
       <main className="flex-1 overflow-y-auto p-6">
-        {activePage === 'daily' && (
-          <div className="flex flex-col items-center gap-6 py-8">
-            {!isOnline && <OfflineBanner />}
-            <WelcomeBanner />
-            <QuotaBar />
-            <ProviderSelector />
-            <DailyTheme />
-            <PromptInput isOnline={isOnline} />
-            <ImageGrid />
-          </div>
-        )}
-
-        {activePage === 'history' && <HistoryPage />}
-
-        {activePage === 'theme-history' && <DailyThemeHistory />}
-
-        {activePage === 'api-config' && <ApiConfigPage />}
-
-        {activePage === 'favorites' && <FavoritesPage />}
-
-        {activePage === 'settings' && <Settings />}
+        {pageRenderers[activePage]}
       </main>
       <ToastContainer />
     </div>

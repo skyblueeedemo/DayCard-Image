@@ -1,16 +1,9 @@
-interface SidebarProps {
-  activePage: string;
-  onNavigate: (page: 'daily' | 'history' | 'theme-history' | 'api-config' | 'settings' | 'favorites') => void;
-}
+import { ROUTES, type RouteId } from '@/router/routes';
 
-const navItems: { id: 'daily' | 'history' | 'theme-history' | 'api-config' | 'settings' | 'favorites'; label: string; icon: string }[] = [
-  { id: 'daily', label: '今日抽卡', icon: '🎴' },
-  { id: 'favorites', label: '我的收藏', icon: '❤' },
-  { id: 'history', label: '历史记录', icon: '📁' },
-  { id: 'theme-history', label: '主题回顾', icon: '📅' },
-  { id: 'api-config', label: 'API 配置', icon: '🔑' },
-  { id: 'settings', label: '设置', icon: '🔧' },
-];
+interface SidebarProps {
+  activePage: RouteId;
+  onNavigate: (page: RouteId) => void;
+}
 
 export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
   return (
@@ -23,7 +16,7 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 py-4">
-        {navItems.map((item) => (
+        {ROUTES.map((item) => (
           <button
             key={item.id}
             onClick={() => onNavigate(item.id)}
