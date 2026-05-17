@@ -174,7 +174,7 @@ export default function ImageCard({ result, onDelete }: ImageCardProps) {
   };
 
   return (
-    <div className="relative rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden hover:border-gray-300 dark:hover:border-gray-600 transition-colors">
+    <div className="relative rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden hover:border-gray-300 dark:hover:border-gray-600 transition-colors">
       {/* Toast */}
       {toast && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded bg-gray-100 dark:bg-gray-900/90 text-xs text-gray-700 dark:text-gray-200 shadow-lg">
