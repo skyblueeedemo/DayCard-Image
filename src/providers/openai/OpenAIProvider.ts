@@ -1,4 +1,4 @@
-import type { IImageProvider, ImageResult, GenerateOptions, QuotaInfo } from '../IImageProvider';
+import type { IImageProvider, ImageResult, GenerateOptions, QuotaInfo, ModelMeta } from '../IImageProvider';
 import { storageAdapter } from '@/store/storageAdapter';
 
 const QUOTA_STORAGE_KEY = 'daycard-quota-openai';
@@ -133,6 +133,23 @@ export class OpenAIProvider implements IImageProvider {
       resetAt: this.getNextResetTime(),
       unit: 'count',
     };
+  }
+
+  /**
+   * 调用 GET /v1/models 拉取可用模型列表，过滤出图像类（gpt-image / dall-e）。
+   */
+  async listModels(): Promise<ModelMeta[]> {
+    const res = await fetch(`${this.config.baseURL}/models`, {
+      headers: { Authorization: `Bearer ${this.config.apiKey}` },
+    });
+    if (!res.ok) {
+      throw new Error(`[${this.name}] listModels 失败: HTTP ${res.status}`);
+    }
+    const json = (await res.json()) as { data?: { id: string }[] };
+    const all = json.data ?? [];
+    return all
+      .filter((m) => /image|dall-e/i.test(m.id))
+      .map((m) => ({ id: m.id, name: m.id, raw: m }));
   }
 
   // ─── Private ──────────────────────────────────────────

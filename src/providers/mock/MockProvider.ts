@@ -1,4 +1,4 @@
-import type { IImageProvider, ImageResult, GenerateOptions, QuotaInfo } from '../IImageProvider';
+import type { IImageProvider, ImageResult, GenerateOptions, QuotaInfo, ModelMeta } from '../IImageProvider';
 
 export class MockProvider implements IImageProvider {
   readonly id = 'mock';
@@ -34,5 +34,12 @@ export class MockProvider implements IImageProvider {
 
   async getQuota(): Promise<QuotaInfo> {
     return { used: 2, total: 999, unit: 'count' };
+  }
+
+  async listModels(): Promise<ModelMeta[]> {
+    return [
+      { id: 'mock-default', name: 'Mock Default', description: '默认占位模型' },
+      { id: 'mock-fast', name: 'Mock Fast', description: '快速模式（无差异，仅演示）' },
+    ];
   }
 }

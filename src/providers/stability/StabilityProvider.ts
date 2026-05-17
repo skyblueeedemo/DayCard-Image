@@ -1,8 +1,9 @@
-import type { IImageProvider, ImageResult, GenerateOptions, QuotaInfo } from '../IImageProvider';
+import type { IImageProvider, ImageResult, GenerateOptions, QuotaInfo, ModelMeta } from '../IImageProvider';
 
 interface StabilityConfig {
   apiKey: string;
   engineId?: string;
+  baseURL?: string;
 }
 
 export class StabilityProvider implements IImageProvider {
@@ -15,13 +16,14 @@ export class StabilityProvider implements IImageProvider {
   constructor(config: StabilityConfig) {
     this.config = {
       engineId: 'stable-diffusion-xl-1024-v1-0',
+      baseURL: 'https://api.stability.ai',
       ...config,
     };
   }
 
   async generate(prompt: string, options?: GenerateOptions): Promise<ImageResult> {
-    const engineId = this.config.engineId!;
-    const url = `https://api.stability.ai/v1/generation/${engineId}/text-to-image`;
+    const engineId = options?.model ?? this.config.engineId!;
+    const url = `${this.config.baseURL}/v1/generation/${engineId}/text-to-image`;
 
     const body = {
       text_prompts: [{ text: prompt, weight: 1 }],
@@ -79,7 +81,7 @@ export class StabilityProvider implements IImageProvider {
 
   async isAvailable(): Promise<boolean> {
     try {
-      const res = await fetch('https://api.stability.ai/v1/engines/list', {
+      const res = await fetch(`${this.config.baseURL}/v1/engines/list`, {
         headers: { Authorization: `Bearer ${this.config.apiKey}` },
       });
       return res.ok;
@@ -91,5 +93,24 @@ export class StabilityProvider implements IImageProvider {
   async getQuota(): Promise<QuotaInfo> {
     // Stability AI 按量计费，无硬上限
     return { used: 0, total: Infinity, unit: 'credit' };
+  }
+
+  /**
+   * 调用 GET /v1/engines/list 拉取可用引擎列表。
+   */
+  async listModels(): Promise<ModelMeta[]> {
+    const res = await fetch(`${this.config.baseURL}/v1/engines/list`, {
+      headers: { Authorization: `Bearer ${this.config.apiKey}` },
+    });
+    if (!res.ok) {
+      throw new Error(`[${this.name}] listModels 失败: HTTP ${res.status}`);
+    }
+    const json = (await res.json()) as Array<{ id: string; name?: string; description?: string }>;
+    return (Array.isArray(json) ? json : []).map((e) => ({
+      id: e.id,
+      name: e.name ?? e.id,
+      description: e.description,
+      raw: e,
+    }));
   }
 }

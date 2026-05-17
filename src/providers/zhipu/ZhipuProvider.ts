@@ -1,8 +1,9 @@
-import type { IImageProvider, ImageResult, GenerateOptions, QuotaInfo } from '../IImageProvider';
+import type { IImageProvider, ImageResult, GenerateOptions, QuotaInfo, ModelMeta } from '../IImageProvider';
 
 interface ZhipuConfig {
   apiKey: string;
   model?: string;
+  baseURL?: string;
 }
 
 export class ZhipuProvider implements IImageProvider {
@@ -15,19 +16,20 @@ export class ZhipuProvider implements IImageProvider {
   constructor(config: ZhipuConfig) {
     this.config = {
       model: 'cogview-3',
+      baseURL: 'https://open.bigmodel.cn/api/paas/v4',
       ...config,
     };
   }
 
   async generate(prompt: string, options?: GenerateOptions): Promise<ImageResult> {
     const body = {
-      model: this.config.model,
+      model: options?.model ?? this.config.model,
       prompt,
       size: this.mapSize(options?.width, options?.height),
     };
 
     const response = await fetch(
-      'https://open.bigmodel.cn/api/paas/v4/images/generations',
+      `${this.config.baseURL}/images/generations`,
       {
         method: 'POST',
         headers: {
@@ -71,7 +73,7 @@ export class ZhipuProvider implements IImageProvider {
     try {
       // 轻量探活：获取模型列表
       const res = await fetch(
-        'https://open.bigmodel.cn/api/paas/v4/models',
+        `${this.config.baseURL}/models`,
         {
           headers: { Authorization: `Bearer ${this.config.apiKey}` },
         },
@@ -85,6 +87,33 @@ export class ZhipuProvider implements IImageProvider {
   async getQuota(): Promise<QuotaInfo> {
     // 智谱按量计费
     return { used: 0, total: Infinity, unit: 'credit' };
+  }
+
+  /**
+   * 调用 GET /v4/models 拉取模型列表，过滤出 cogview / image 类。
+   * 失败时 fallback 到静态列表（Zhipu API 偶发只对部分账号开放）。
+   */
+  async listModels(): Promise<ModelMeta[]> {
+    try {
+      const res = await fetch(`${this.config.baseURL}/models`, {
+        headers: { Authorization: `Bearer ${this.config.apiKey}` },
+      });
+      if (res.ok) {
+        const json = (await res.json()) as { data?: { id: string }[] };
+        const all = json.data ?? [];
+        const filtered = all
+          .filter((m) => /cogview|image/i.test(m.id))
+          .map((m) => ({ id: m.id, name: m.id, raw: m }));
+        if (filtered.length > 0) return filtered;
+      }
+    } catch {
+      // 落到 fallback
+    }
+    // Zhipu 的 list 接口不一定开放，提供静态 fallback
+    return [
+      { id: 'cogview-3', name: 'CogView-3', description: '通用图像生成（默认）' },
+      { id: 'cogview-3-plus', name: 'CogView-3 Plus', description: '更高质量' },
+    ];
   }
 
   private mapSize(width?: number, height?: number): string {

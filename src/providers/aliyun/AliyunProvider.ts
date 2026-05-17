@@ -1,11 +1,13 @@
-import type { IImageProvider, ImageResult, GenerateOptions, QuotaInfo } from '../IImageProvider';
+import type { IImageProvider, ImageResult, GenerateOptions, QuotaInfo, ModelMeta } from '../IImageProvider';
 
 interface AliyunConfig {
   apiKey: string;
   model?: string;
+  baseURL?: string;
 }
 
-const BASE_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis';
+const DEFAULT_BASE_URL = 'https://dashscope.aliyuncs.com';
+const TASK_PATH = '/api/v1/services/aigc/text2image/image-synthesis';
 
 export class AliyunProvider implements IImageProvider {
   readonly id = 'aliyun';
@@ -17,14 +19,16 @@ export class AliyunProvider implements IImageProvider {
   constructor(config: AliyunConfig) {
     this.config = {
       model: 'wanx2.0-t2i-turbo',
+      baseURL: DEFAULT_BASE_URL,
       ...config,
     };
   }
 
   async generate(prompt: string, options?: GenerateOptions): Promise<ImageResult> {
+    const taskUrl = `${this.config.baseURL}${TASK_PATH}`;
     // 1. 提交异步任务
     const submitBody = {
-      model: this.config.model,
+      model: options?.model ?? this.config.model,
       input: { prompt },
       parameters: {
         size: this.mapSize(options?.width, options?.height),
@@ -32,7 +36,7 @@ export class AliyunProvider implements IImageProvider {
       },
     };
 
-    const submitRes = await fetch(BASE_URL, {
+    const submitRes = await fetch(taskUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -80,7 +84,7 @@ export class AliyunProvider implements IImageProvider {
   async isAvailable(): Promise<boolean> {
     try {
       const res = await fetch(
-        'https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis',
+        `${this.config.baseURL}${TASK_PATH}`,
         {
           method: 'POST',
           headers: {
@@ -104,6 +108,34 @@ export class AliyunProvider implements IImageProvider {
     return { used: 0, total: Infinity, unit: 'credit' };
   }
 
+  /**
+   * 调用 DashScope OpenAI 兼容接口拉取模型列表，过滤出图像模型。
+   * 失败时 fallback 到静态硬编码列表。
+   */
+  async listModels(): Promise<ModelMeta[]> {
+    try {
+      const res = await fetch(`${this.config.baseURL}/compatible-mode/v1/models`, {
+        headers: { Authorization: `Bearer ${this.config.apiKey}` },
+      });
+      if (res.ok) {
+        const json = (await res.json()) as { data?: { id: string }[] };
+        const all = json.data ?? [];
+        const filtered = all
+          .filter((m) => /^(wan|wanx|qwen-image|z-image)/i.test(m.id))
+          .map((m) => ({ id: m.id, name: m.id, raw: m }));
+        if (filtered.length > 0) return filtered;
+      }
+    } catch {
+      // 落到 fallback
+    }
+    return [
+      { id: 'wan2.7-image-pro', name: 'wan2.7-image-pro', description: '文字渲染、品牌色、角色一致性' },
+      { id: 'wan2.7-image', name: 'wan2.7-image', description: '生成速度更快，最高 2K' },
+      { id: 'wanx2.0-t2i-turbo', name: 'wanx2.0-t2i-turbo', description: '通用图像生成（异步任务）' },
+      { id: 'qwen-image-2.0-pro', name: 'qwen-image-2.0-pro', description: '负向提示词、多图变体' },
+    ];
+  }
+
   private mapSize(width?: number, height?: number): string {
     return `${width ?? 1024}*${height ?? 1024}`;
   }
@@ -116,7 +148,7 @@ export class AliyunProvider implements IImageProvider {
       await new Promise((r) => setTimeout(r, interval));
 
       const res = await fetch(
-        `https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`,
+        `${this.config.baseURL}/api/v1/tasks/${taskId}`,
         {
           headers: { Authorization: `Bearer ${this.config.apiKey}` },
         },
