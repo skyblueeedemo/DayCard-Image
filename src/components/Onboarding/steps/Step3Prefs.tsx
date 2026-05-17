@@ -24,7 +24,7 @@ function ToggleSwitch({
       <button
         onClick={() => onChange(!enabled)}
         className={`relative w-10 h-5 rounded-full transition-colors ${
-          enabled ? 'bg-brand' : 'bg-gray-300 dark:bg-gray-600'
+          enabled ? 'bg-brand dark:bg-neutral-500' : 'bg-gray-300 dark:bg-gray-600'
         }`}
       >
         <span
