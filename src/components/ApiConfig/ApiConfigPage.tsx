@@ -308,7 +308,7 @@ export default function ApiConfigPage() {
           const isActive = hasKey || isMock;
 
           return (
-            <div key={pid} className={cardClass}>
+            <div key={pid} className={`${cardClass} border-l-[3px] ${isActive ? 'border-l-brand' : 'border-l-gray-300 dark:border-l-gray-600'}`}>
               {/* 模型服务头部 */}
               <div className="flex items-center">
                 <button
