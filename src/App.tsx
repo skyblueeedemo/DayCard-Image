@@ -23,7 +23,6 @@ import WelcomeBanner from '@/components/DailyCard/WelcomeBanner';
 
 function MainApp() {
   useKeyboardShortcuts();
-  useAppearance();
   const isOnline = useNetworkStatus();
   const addToast = useToastStore((s) => s.addToast);
 
