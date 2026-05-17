@@ -8,6 +8,25 @@
 
 > 以下内容为开发中功能，发布时移入对应版本节点。
 
+### Added
+
+- **storageAdapter 统一存储层**：`src/store/storageAdapter.ts` 封装 localStorage 读写，提供 `getJSON/setJSON/getString/setString/remove/has` 六个方法 + 13 条单元测试覆盖（含环境不可用 / JSON 异常 / quota 抛错三类边界）
+- **Provider 注册表**：`src/providers/registry.ts` 集中管理 5 个 Provider 元数据（label / technicalName / priority / defaultModels / docsURL / defaultBaseURL），导出 `getProviderMeta` / `getVisibleProviders` / `getProviderLabels` / `getDefaultModels` 辅助函数
+- **路由表**：`src/router/routes.ts` 集中声明 6 个页面路由（id / label / icon），导出 `ROUTES` / `RouteId` / `isRouteId` / `DEFAULT_ROUTE`
+- **OpenAI Provider 配额持久化**：`OpenAIProvider.dailyUsed / lastResetDate` 通过 storageAdapter 写入 `daycard-quota-openai`，跨重启保留
+
+### Changed
+
+- **renderer 进程 localStorage 调用**：8 处分散的 try/catch + JSON.parse 全部收敛到 storageAdapter（`providerOrder.ts` / `dailyTheme.ts` / `persistenceStore.ts` / `useAppearance.ts` / `Settings.tsx` / `ImageCard.tsx` / `DailyTheme.tsx` / `App.tsx`）
+- **ApiConfigPage**：删除局部硬编码的 `PROVIDER_LABELS`（13 行）+ `DEFAULT_MODELS`（12 行），改用 `getProviderLabels(import.meta.env.DEV)` / `getDefaultModels()`
+- **App.tsx + Sidebar**：删除字符串联合类型路由 + if-else 渲染 + navItems 硬编码，改用 ROUTES 声明式渲染 + RouteId 类型 + isRouteId 守卫
+- **generationStore**：提取 `doGenerate(promptText, get, set)` 私有函数，`generate()` 与 `retryGenerate(p)` 共享调用，消除阿里云模型校验等逻辑的重复
+- **DailyTheme.hasStarted**：storage 完全不可用时由「假装已开始」改为「显示首次使用引导」，行为更一致
+
+### Fixed
+
+- **MockProvider 测试 10% 概率失败**：用 `Math.random = mockFn` 注入确定性 stub，并新增一条强制失败路径测试覆盖错误消息（用例数 6 → 7）
+
 ---
 
 ## [dev1.3.1] - 2026-05-17

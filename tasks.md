@@ -1192,3 +1192,131 @@
 - ✅ 实时刷新：`onDelete` 回调链路打通，历史记录 / 收藏删除即时生效
 - ✅ `npm run type-check` 0 errors
 - ✅ Git tag `dev1.3.1` 已打（同时回补历史 tag `v1.2.0` / `v1.2.1` / `dev1.3.0`）
+
+
+---
+
+## 优化阶段 3：基础重构（路由表 / 存储层 / 注册表 / 配额持久化）
+
+**阶段目标**：清除技术债，为改进计划阶段二（API 能力升级）打稳地基；不破坏任何现有功能，全部测试与类型检查保持绿。
+
+**范围**：
+- 统一存储层：renderer 进程 8 处分散的 localStorage 调用收敛到 storageAdapter
+- Provider 注册表：将 PROVIDER_LABELS / DEFAULT_MODELS 等元数据集中管理
+- 路由系统：把字符串联合类型 + if/else 渲染替换为声明式 ROUTES
+- 消除 generate / retryGenerate 重复实现（dev1.3.1 重复度提升项）
+- OpenAI 配额跨重启持久化
+- 顺手修复 MockProvider 10% 概率失败的脆弱测试
+
+**验收条件**：
+- [x] storageAdapter 单元测试 13 条全过（覆盖环境不可用 / JSON 异常 / quota 抛错）
+- [x] grep `localStorage\.(getItem|setItem|removeItem)` 在 src/ 下只剩 storageAdapter.ts 自身
+- [x] ApiConfigPage 不再持有 PROVIDER_LABELS / DEFAULT_MODELS 硬编码
+- [x] 6 个页面切换正常，托盘 navigate-to 事件仍能命中 isRouteId 守卫
+- [x] generationStore 9 条测试全过（验证 doGenerate 重构未破坏行为）
+- [x] OpenAI 重启后配额状态从 storageAdapter 恢复
+- [x] MockProvider 测试 5 次连跑全绿（含强制失败路径覆盖）
+- [x] `npm test` 44/44，`npm run type-check` 0 errors
+
+---
+
+### 任务记录
+
+### T-101: storageAdapter 模块 + 单元测试
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：新增 src/store/storageAdapter.ts，统一封装 renderer 进程 localStorage 读写
+- **涉及文件**：`src/store/storageAdapter.ts`（新建）、`src/store/__tests__/storageAdapter.test.ts`（新建）
+- **变更摘要**：导出 6 个方法 + 13 条单元测试，测试套件 30 → 43
+- **Commit**：`14e4007 feat: 新增 storageAdapter 统一封装本地存储读写`
+
+### T-102: 现有 localStorage 调用统一走 storageAdapter
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：消除 renderer 进程 8 处分散的 try/catch + JSON.parse 模式
+- **涉及文件**：`providerOrder.ts` / `dailyTheme.ts` / `persistenceStore.ts` / `useAppearance.ts` / `Settings.tsx` / `ImageCard.tsx` / `DailyTheme.tsx` / `App.tsx`
+- **变更摘要**：净减 41 行（-71/+30），DailyTheme.hasStarted 行为微调（storage 不可用 → 显示引导）
+- **Commit**：`0b131b7 refactor: 现有 localStorage 调用统一走 storageAdapter`
+
+### T-103: Provider 注册表元数据
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：集中管理 Provider 元数据（label / priority / defaultModels / docsURL / defaultBaseURL）
+- **涉及文件**：`src/providers/registry.ts`（新建）
+- **变更摘要**：录入 5 个 Provider；导出 PROVIDER_REGISTRY、ProviderMeta、getProviderMeta、getVisibleProviders、getProviderLabels、getDefaultModels；defaultBaseURL 字段为阶段二 2.2 预留
+- **Commit**：`2a3b893 feat: 新增 Provider 注册表元数据`
+
+### T-104: ApiConfigPage 接入注册表
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：删除 ApiConfigPage 内部硬编码，改从 registry 读取
+- **涉及文件**：`src/components/ApiConfig/ApiConfigPage.tsx`
+- **变更摘要**：净减 16 行（-25/+9），用 useMemo 缓存 labels / models 字典
+- **Commit**：`5daf163 refactor: ApiConfigPage 改用 Provider 注册表`
+
+### T-105: 路由表声明
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：新建 src/router/routes.ts 集中声明 6 个页面路由
+- **涉及文件**：`src/router/routes.ts`（新建）
+- **变更摘要**：导出 ROUTE_DEFINITIONS、ROUTES、ROUTE_IDS、RouteId、isRouteId、DEFAULT_ROUTE；emoji icon 保留（lucide-react 迁移留待阶段三 UI 升级）
+- **Commit**：`fad87bc feat: 新增路由表声明`
+
+### T-106: App + Sidebar 接入路由表
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：替换字符串联合类型 + if/else 渲染 + navItems 硬编码
+- **涉及文件**：`src/App.tsx`、`src/components/Sidebar.tsx`
+- **变更摘要**：用 RouteId 替代 6 项字符串联合；用 isRouteId 替代 includes 校验；用 pageRenderers 对象替代 6 个 if 分支；DailyCard 视图 useMemo 缓存
+- **Commit**：`d755ba7 refactor: App.tsx + Sidebar 改用路由表声明式渲染`
+
+### T-107: 提取 doGenerate 消除 generate / retryGenerate 重复
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：消除 dev1.3.1 引入的两处校验逻辑重复（改进计划 1.2 优先级提升项）
+- **涉及文件**：`src/store/generationStore.ts`
+- **变更摘要**：净减 22 行（-87/+65），所有未来新增的前置校验只需改 doGenerate 一处
+- **Commit**：`42ddc47 refactor: 提取 doGenerate 消除 generate / retryGenerate 重复`
+
+### T-108: OpenAI 配额持久化
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：dailyUsed / lastResetDate 通过 storageAdapter 持久化，重启不归零
+- **涉及文件**：`src/providers/openai/OpenAIProvider.ts`
+- **变更摘要**：新增 hydrateQuota / persistQuota；checkDailyReset 触发日期重置时同样写回；与 Electron QuotaService 互为冗余备份
+- **Commit**：`1f2ef8e feat: OpenAI Provider 配额持久化跨重启保留`
+
+### T-X3: 修复 MockProvider 测试 10% 概率失败（顺手清理）
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：修预先存在的脆弱测试，5 次连跑稳定全绿
+- **涉及文件**：`src/providers/mock/__tests__/MockProvider.test.ts`
+- **变更摘要**：用 `Math.random = mockFn` 注入确定性 stub；新增一条强制失败路径测试覆盖错误消息（用例数 6 → 7，套件 43 → 44）
+- **Commit**：`0193ccf test: 修复 MockProvider 测试 10% 概率随机失败`
+
+### T-109: 阶段一收尾文档同步（本任务）
+
+- **状态**：✅ 已完成
+- **日期**：2026-05-17
+- **目标**：CHANGELOG / tasks.md / 改进计划三处同步阶段一完成情况
+- **涉及文件**：`CHANGELOG.md`、`tasks.md`、`DayCard-Image改进计划.md`
+- **预期结果**：三处文档版本表述一致，阶段一全部条目勾选完成
+
+---
+
+**优化阶段 3 回顾**（2026-05-17）：
+- ✅ 9 个子任务全部完成（含 T-X3 顺手清理），3 个新文件（storageAdapter / registry / routes），8 个修改文件
+- ✅ 测试套件由 30 → 44 用例，全绿；type-check 0 errors；lint 0 errors（warning 全为预先存在的 import-order）
+- ✅ 净代码变化：-260 / +560，新增基础设施 ~ 350 行，消除重复 ~ 80 行
+- ✅ 改进计划阶段一 1.1～1.5 全部勾选完成
+- ⚠️ 决策项 D-1（B 选项）：阶段一基础重构对用户无感知，**不打 tag**，等改进计划阶段二完成再统一升版至 dev1.4.0
+- **结论**：阶段一基础重构已交付；codebase 准备好承接改进计划阶段二（API 能力升级：动态模型列表、Base URL 自定义、增强连接测试）
