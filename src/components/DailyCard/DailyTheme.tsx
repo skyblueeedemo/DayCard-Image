@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { getTodayThemes, type Theme } from '@/utils/dailyTheme';
 import { useGenerationStore } from '@/store/generationStore';
+import { storageAdapter } from '@/store/storageAdapter';
 
 const STARTED_KEY = 'daycard-theme-started';
 
 function hasStarted(): boolean {
-  try { return localStorage.getItem(STARTED_KEY) === '1'; } catch { return true; }
+  return storageAdapter.getString(STARTED_KEY, '') === '1';
 }
 
 function markStarted(): void {
-  try { localStorage.setItem(STARTED_KEY, '1'); } catch { /* ignore */ }
+  storageAdapter.setString(STARTED_KEY, '1');
 }
 
 const sampleTheme: Theme = {

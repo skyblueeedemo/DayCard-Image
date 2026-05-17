@@ -1,4 +1,5 @@
 import type { ImageResult } from '@/providers/IImageProvider';
+import { storageAdapter } from './storageAdapter';
 
 const STORAGE_KEY = 'daycard-results';
 const MAX_ENTRIES = 500;
@@ -10,25 +11,15 @@ interface StorageData {
 }
 
 function loadFromLocalStorage(): ImageResult[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const data: StorageData = JSON.parse(raw);
-    if (data.version !== STORAGE_VERSION) return [];
-    return data.results ?? [];
-  } catch {
-    return [];
-  }
+  const data = storageAdapter.getJSON<StorageData | null>(STORAGE_KEY, null);
+  if (!data || data.version !== STORAGE_VERSION) return [];
+  return data.results ?? [];
 }
 
 function saveToLocalStorage(results: ImageResult[]): void {
   const trimmed = results.slice(0, MAX_ENTRIES);
   const data: StorageData = { version: STORAGE_VERSION, results: trimmed };
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {
-    // ignore
-  }
+  storageAdapter.setJSON(STORAGE_KEY, data);
 }
 
 async function saveToMainProcess(results: ImageResult[]): Promise<void> {
@@ -84,7 +75,7 @@ function addResult(result: ImageResult): ImageResult[] {
 }
 
 function clearAll(): void {
-  try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+  storageAdapter.remove(STORAGE_KEY);
 }
 
 export const persistenceStore = {

@@ -1,5 +1,6 @@
 import { useSettingsStore } from '../../store/settingsStore';
 import { useToastStore } from '../../store/toastStore';
+import { storageAdapter } from '../../store/storageAdapter';
 
 function ToggleSwitch({
   enabled,
@@ -52,7 +53,7 @@ export default function Settings() {
       root.classList.remove('dark');
     }
     // localStorage 兜底（Web 模式无 Electron IPC）
-    try { localStorage.setItem('daycard-appearance', v); } catch { /* ignore */ }
+    storageAdapter.setString('daycard-appearance', v);
     // 同步 Electron 持久化
     const ok = await updateSetting('appearance', v);
     if (!ok) {

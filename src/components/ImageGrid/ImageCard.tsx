@@ -3,6 +3,7 @@ import type { ImageResult } from '@/providers/IImageProvider';
 import { useGenerationStore } from '@/store/generationStore';
 import { useWallpaper } from '@/hooks/useWallpaper';
 import { persistenceStore } from '@/store/persistenceStore';
+import { storageAdapter } from '@/store/storageAdapter';
 import { buildDailyPrompt } from '@/utils/promptEngine';
 
 interface ImageCardProps {
@@ -21,19 +22,11 @@ const providerColors: Record<string, string> = {
 const SKIP_CONFIRM_KEY = 'daycard-skip-delete-confirm';
 
 function shouldSkipConfirm(): boolean {
-  try {
-    return localStorage.getItem(SKIP_CONFIRM_KEY) === 'true';
-  } catch {
-    return false;
-  }
+  return storageAdapter.getString(SKIP_CONFIRM_KEY, '') === 'true';
 }
 
 function setSkipConfirm(skip: boolean): void {
-  try {
-    localStorage.setItem(SKIP_CONFIRM_KEY, String(skip));
-  } catch {
-    // ignore
-  }
+  storageAdapter.setString(SKIP_CONFIRM_KEY, String(skip));
 }
 
 export default function ImageCard({ result, onDelete }: ImageCardProps) {

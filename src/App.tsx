@@ -4,6 +4,7 @@ import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useAppearance } from '@/hooks/useAppearance';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useToastStore } from '@/store/toastStore';
+import { storageAdapter } from '@/store/storageAdapter';
 import Sidebar from '@/components/Sidebar';
 import ImageGrid from '@/components/ImageGrid/ImageGrid';
 import PromptInput from '@/components/DailyCard/PromptInput';
@@ -100,7 +101,7 @@ export default function App() {
   }
 
   // 启动页：首次打开浏览器/Electron 时显示（localStorage 控制，清除后重测）
-  const splashShown = (() => { try { return localStorage.getItem('daycard-splash-shown'); } catch { return null; } })();
+  const splashShown = storageAdapter.getString('daycard-splash-shown', '');
   const needSplash = !splashShown || firstLaunch;
 
   if (needSplash && showSplash) {
@@ -108,7 +109,7 @@ export default function App() {
       <SplashScreen
         onDone={() => {
           setShowSplash(false);
-          try { localStorage.setItem('daycard-splash-shown', '1'); } catch { /* ignore */ }
+          storageAdapter.setString('daycard-splash-shown', '1');
         }}
       />
     );

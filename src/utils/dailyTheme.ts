@@ -1,4 +1,5 @@
 import { buildDailyPrompt, buildDailyPrompts } from './promptEngine';
+import { storageAdapter } from '@/store/storageAdapter';
 
 export interface Theme {
   name: string;
@@ -24,13 +25,7 @@ function dateString(date: Date): string {
 }
 
 function loadHistory(): DailyThemesEntry[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as DailyThemesEntry[];
-  } catch {
-    return [];
-  }
+  return storageAdapter.getJSON<DailyThemesEntry[]>(STORAGE_KEY, []);
 }
 
 function saveHistory(entry: DailyThemesEntry): void {
@@ -38,11 +33,7 @@ function saveHistory(entry: DailyThemesEntry): void {
   history.unshift(entry);
   // Keep last 90 days
   const trimmed = history.slice(0, 90);
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
-  } catch {
-    // ignore
-  }
+  storageAdapter.setJSON(STORAGE_KEY, trimmed);
 }
 
 // 保留旧主题数组作为离线/降级备用

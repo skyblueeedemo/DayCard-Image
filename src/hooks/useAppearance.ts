@@ -1,13 +1,12 @@
 import { useEffect } from 'react';
 import { useSettingsStore } from '@/store/settingsStore';
+import { storageAdapter } from '@/store/storageAdapter';
 
 const LS_KEY = 'daycard-appearance';
 
 function getStoredAppearance(): 'dark' | 'light' {
-  try {
-    const v = localStorage.getItem(LS_KEY);
-    if (v === 'light' || v === 'dark') return v;
-  } catch { /* ignore */ }
+  const v = storageAdapter.getString(LS_KEY, '');
+  if (v === 'light' || v === 'dark') return v;
   return 'dark';
 }
 
@@ -29,6 +28,6 @@ export function useAppearance(): void {
   useEffect(() => {
     // 以 store 值为准，同时写回 localStorage
     syncClass(appearance);
-    try { localStorage.setItem(LS_KEY, appearance); } catch { /* ignore */ }
+    storageAdapter.setString(LS_KEY, appearance);
   }, [appearance]);
 }
