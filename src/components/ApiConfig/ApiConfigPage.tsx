@@ -3,6 +3,7 @@ import { useToastStore } from '../../store/toastStore';
 import { useGenerationStore } from '../../store/generationStore';
 import { loadOrder, saveOrder, loadModelOrder, saveModelOrder } from '../../utils/providerOrder';
 import { getProviderLabels, getDefaultModels } from '../../providers/registry';
+import { storageAdapter } from '../../store/storageAdapter';
 
 interface ModelInfo {
   description?: string;
@@ -13,11 +14,36 @@ interface ModelInfo {
 interface ProviderEntry {
   hasKey: boolean;
   maskedKey: string | null;
+  baseURL?: string;
   models: Record<string, ModelInfo>;
 }
 
 interface ConfigData {
   providers: Record<string, ProviderEntry>;
+}
+
+interface TestResultDetail {
+  ok: boolean;
+  msg: string;
+  latencyMs?: number;
+  errorCode?: string;
+}
+
+interface ApiModelMeta {
+  id: string;
+  name?: string;
+  description?: string;
+}
+
+interface ListModelsCache {
+  fetchedAt: number;
+  models: ApiModelMeta[];
+}
+
+const LIST_MODELS_CACHE_TTL = 10 * 60 * 1000; // 10 分钟（D-2.1 选项 A）
+
+function listModelsCacheKey(providerId: string): string {
+  return `daycard-list-models-${providerId}`;
 }
 
 function sortEntries(entries: [string, string][], order: string[]): [string, string][] {
@@ -36,14 +62,18 @@ export default function ApiConfigPage() {
   const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
   const [editingProvider, setEditingProvider] = useState<string | null>(null);
   const [keyInput, setKeyInput] = useState('');
+  const [baseURLInput, setBaseURLInput] = useState('');
+  const [showBaseURL, setShowBaseURL] = useState<string | null>(null); // 控制 baseURL 输入折叠
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
-  const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [testResult, setTestResult] = useState<TestResultDetail | null>(null);
   const [providerOrder, setProviderOrder] = useState<string[]>(() => loadOrder());
   const [modelOrders, setModelOrders] = useState<Record<string, string[]>>({});
+  const [fetchingModels, setFetchingModels] = useState<string | null>(null);
 
   const addToast = useToastStore((s) => s.addToast);
   const activeProviderId = useGenerationStore((s) => s.activeProviderId);
+  const activeModelId = useGenerationStore((s) => s.activeModelId);
   const setActiveProvider = useGenerationStore((s) => s.setActiveProvider);
 
   // 从注册表读取标签与默认模型（按 import.meta.env.DEV 过滤 Mock）
@@ -84,14 +114,21 @@ export default function ApiConfigPage() {
     if (!editingProvider || !window.electronAPI?.updateConfig) return;
     setSaving(true);
     try {
-      const res = await window.electronAPI.updateConfig({
+      const params: { providerId: string; apiKey?: string; baseURL?: string } = {
         providerId: editingProvider,
-        apiKey: keyInput,
-      });
+      };
+      if (keyInput) params.apiKey = keyInput;
+      // 同步保存 baseURL（只有用户展开过 baseURL 编辑面板时才传，避免误删）
+      if (showBaseURL === editingProvider) {
+        params.baseURL = baseURLInput; // 空字符串会被主进程解释为"删除字段"
+      }
+      const res = await window.electronAPI.updateConfig(params);
       if (res.status === 'ok') {
-        addToast('API Key 已保存', 'success');
+        addToast('配置已保存', 'success');
         setEditingProvider(null);
         setKeyInput('');
+        setBaseURLInput('');
+        setShowBaseURL(null);
         loadConfig();
       } else {
         addToast(res.message ?? '保存失败', 'error');
@@ -113,15 +150,87 @@ export default function ApiConfigPage() {
     setTesting(providerId);
     setTestResult(null);
     try {
-      const res = await window.electronAPI.testConnection({ providerId, apiKey: key });
+      const params: { providerId: string; apiKey: string; baseURL?: string } = {
+        providerId,
+        apiKey: key,
+      };
+      if (showBaseURL === providerId && baseURLInput) {
+        params.baseURL = baseURLInput;
+      }
+      const res = await window.electronAPI.testConnection(params);
       setTestResult({
         ok: res.status === 'ok',
         msg: res.message ?? (res.status === 'ok' ? '成功' : '失败'),
+        latencyMs: res.latencyMs,
+        errorCode: res.errorCode,
       });
     } catch {
       setTestResult({ ok: false, msg: '测试请求失败' });
     } finally {
       setTesting(null);
+    }
+  };
+
+  /**
+   * 从 API 拉取模型列表，与现有 config 的 models 做 diff 合并：
+   * - 新模型：用注册表默认配额初始化
+   * - 已存在模型：保留 remaining（避免覆盖用户用过的配额）— D-2.2 选项 B
+   */
+  const handleFetchModels = async (providerId: string) => {
+    if (!window.electronAPI?.listProviderModels) return;
+    setFetchingModels(providerId);
+    try {
+      // 优先读 storageAdapter 缓存（10 分钟 TTL）— D-2.1 选项 A
+      const cached = storageAdapter.getJSON<ListModelsCache | null>(listModelsCacheKey(providerId), null);
+      let models: ApiModelMeta[];
+      if (cached && Date.now() - cached.fetchedAt < LIST_MODELS_CACHE_TTL) {
+        models = cached.models;
+      } else {
+        const res = await window.electronAPI.listProviderModels(providerId);
+        if (res.status !== 'ok' || !res.data) {
+          addToast(res.message ?? '获取模型失败', 'error');
+          return;
+        }
+        models = res.data;
+        storageAdapter.setJSON(listModelsCacheKey(providerId), {
+          fetchedAt: Date.now(),
+          models,
+        });
+      }
+
+      // diff 合并到现有 config
+      const existing = config?.providers[providerId]?.models ?? {};
+      const defaultsForProvider = defaultModels[providerId] ?? {};
+      const merged: Record<string, ModelInfo> = { ...existing };
+      for (const m of models) {
+        if (merged[m.id]) {
+          // 已存在：保留 remaining，但允许更新 description
+          if (m.description) merged[m.id] = { ...merged[m.id], description: m.description };
+        } else {
+          // 新模型：用注册表默认值（若无则按 100 初始化）
+          const def = defaultsForProvider[m.id];
+          merged[m.id] = {
+            description: m.description ?? def?.description,
+            remaining: def?.total ?? 100,
+            total: def?.total ?? 100,
+          };
+        }
+      }
+
+      const updateRes = await window.electronAPI.updateConfig?.({
+        providerId,
+        models: merged,
+      });
+      if (updateRes?.status === 'ok') {
+        addToast(`已同步 ${models.length} 个模型`, 'success');
+        loadConfig();
+      } else {
+        addToast('保存模型列表失败', 'error');
+      }
+    } catch {
+      addToast('获取模型失败', 'error');
+    } finally {
+      setFetchingModels(null);
     }
   };
 
@@ -286,7 +395,7 @@ export default function ApiConfigPage() {
                     )}
 
                     {isEditing && (
-                      <div className="mt-2 flex items-center gap-2">
+                      <div className="mt-2 flex items-center gap-2 flex-wrap">
                         <button
                           onClick={() => handleTestConnection(pid)}
                           disabled={testing === pid || !keyInput.trim()}
@@ -294,27 +403,83 @@ export default function ApiConfigPage() {
                         >
                           {testing === pid ? '测试中...' : '测试连接'}
                         </button>
+                        <button
+                          onClick={() => {
+                            if (showBaseURL === pid) {
+                              setShowBaseURL(null);
+                              setBaseURLInput('');
+                            } else {
+                              setShowBaseURL(pid);
+                              setBaseURLInput(entry?.baseURL ?? '');
+                            }
+                          }}
+                          className="text-xs px-3 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        >
+                          {showBaseURL === pid ? '收起 Base URL' : '自定义 Base URL'}
+                        </button>
                         {testResult && (
-                          <span className={`text-xs ${testResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
-                            {testResult.msg}
-                          </span>
+                          <div className={`text-xs flex items-center gap-2 ${testResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                            <span>{testResult.msg}</span>
+                            {testResult.latencyMs !== undefined && (
+                              <span className="text-gray-400 dark:text-gray-500">· {testResult.latencyMs}ms</span>
+                            )}
+                            {testResult.errorCode && (
+                              <span className="text-gray-400 dark:text-gray-500 font-mono">· {testResult.errorCode}</span>
+                            )}
+                          </div>
                         )}
+                      </div>
+                    )}
+
+                    {isEditing && showBaseURL === pid && (
+                      <div className="mt-2">
+                        <label className="text-xs text-gray-500 dark:text-gray-400">
+                          自定义 Base URL（留空恢复默认）
+                        </label>
+                        <input
+                          type="text"
+                          value={baseURLInput}
+                          onChange={(e) => setBaseURLInput(e.target.value)}
+                          placeholder="例如：https://api.example.com/v1"
+                          className="mt-1 w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 focus:border-blue-500 focus:outline-none font-mono"
+                        />
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                          适用于代理、镜像或私有部署。点击保存后生效。
+                        </p>
+                      </div>
+                    )}
+
+                    {!isEditing && entry?.baseURL && (
+                      <div className="mt-1 text-xs text-gray-400 dark:text-gray-500 font-mono">
+                        Base URL: {entry.baseURL}
                       </div>
                     )}
                   </div>
 
                   <div className="mt-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
                       <label className="text-xs text-gray-500 dark:text-gray-400">模型列表</label>
-                      {!modelCount && (
-                        <button
-                          onClick={() => handleInitModels(pid)}
-                          disabled={saving}
-                          className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
-                        >
-                          导入默认模型
-                        </button>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {!modelCount && defaultModels[pid] && (
+                          <button
+                            onClick={() => handleInitModels(pid)}
+                            disabled={saving}
+                            className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
+                          >
+                            导入默认模型
+                          </button>
+                        )}
+                        {hasKey && pid !== 'mock' && (
+                          <button
+                            onClick={() => handleFetchModels(pid)}
+                            disabled={fetchingModels === pid || saving}
+                            className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
+                            title="从 API 拉取最新模型列表（10 分钟内有缓存）"
+                          >
+                            {fetchingModels === pid ? '同步中...' : '从 API 同步'}
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {modelCount > 0 ? (
@@ -329,23 +494,37 @@ export default function ApiConfigPage() {
                                 return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
                               })
                             : entries;
-                          return sorted.map(([mid, info], index) => (
-                            <div key={mid} className="flex items-center gap-1 py-1.5 px-2 rounded bg-gray-50 dark:bg-gray-900/50">
-                              <button onClick={() => moveModelOrder(pid, index, -1)} disabled={index === 0} className="text-xs px-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-20" title="上移">↑</button>
-                              <button onClick={() => moveModelOrder(pid, index, 1)} disabled={index === sorted.length - 1} className="text-xs px-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-20" title="下移">↓</button>
-                              <div className="flex-1 flex items-center justify-between">
-                                <div>
-                                  <span className="text-sm text-gray-700 dark:text-gray-200">{mid}</span>
-                                  {info.description && (
-                                    <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">{info.description}</span>
-                                  )}
+                          return sorted.map(([mid, info], index) => {
+                            const isCurrentModel =
+                              pid === activeProviderId && mid === activeModelId;
+                            return (
+                              <div
+                                key={mid}
+                                className={`flex items-center gap-1 py-1.5 px-2 rounded ${
+                                  isCurrentModel
+                                    ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700'
+                                    : 'bg-gray-50 dark:bg-gray-900/50'
+                                }`}
+                              >
+                                <button onClick={() => moveModelOrder(pid, index, -1)} disabled={index === 0} className="text-xs px-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-20" title="上移">↑</button>
+                                <button onClick={() => moveModelOrder(pid, index, 1)} disabled={index === sorted.length - 1} className="text-xs px-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-20" title="下移">↓</button>
+                                <div className="flex-1 flex items-center justify-between">
+                                  <div>
+                                    <span className="text-sm text-gray-700 dark:text-gray-200">{mid}</span>
+                                    {isCurrentModel && (
+                                      <span className="text-xs text-blue-600 dark:text-blue-400 ml-2">· 当前选用</span>
+                                    )}
+                                    {info.description && (
+                                      <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">{info.description}</span>
+                                    )}
+                                  </div>
+                                  <span className={`text-xs font-mono flex-shrink-0 ${info.remaining === 0 ? 'text-red-500' : info.remaining < 10 ? 'text-yellow-500' : 'text-gray-400 dark:text-gray-500'}`}>
+                                    {info.remaining}/{info.total}
+                                  </span>
                                 </div>
-                                <span className={`text-xs font-mono flex-shrink-0 ${info.remaining === 0 ? 'text-red-500' : info.remaining < 10 ? 'text-yellow-500' : 'text-gray-400 dark:text-gray-500'}`}>
-                                  {info.remaining}/{info.total}
-                                </span>
                               </div>
-                            </div>
-                          ));
+                            );
+                          });
                         })()}
                       </div>
                     ) : (
